@@ -1,0 +1,162 @@
+{
+	"ImportPath": "github.com/dethi/torrent_service",
+	"GoVersion": "go1.6",
+	"Deps": [
+		{
+			"ImportPath": "github.com/RoaringBitmap/roaring",
+			"Comment": "v0.2.0-3-gdda1914",
+			"Rev": "dda1914bb020fa3297225d809c53aaad4a2894c1"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/missinggo",
+			"Rev": "2524d6356f6cc748cebe6d63c97ffb3ee0f4abea"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/missinggo/bitmap",
+			"Rev": "2524d6356f6cc748cebe6d63c97ffb3ee0f4abea"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/missinggo/itertools",
+			"Rev": "2524d6356f6cc748cebe6d63c97ffb3ee0f4abea"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/missinggo/orderedmap",
+			"Rev": "2524d6356f6cc748cebe6d63c97ffb3ee0f4abea"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/missinggo/perf",
+			"Rev": "2524d6356f6cc748cebe6d63c97ffb3ee0f4abea"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/missinggo/pproffd",
+			"Rev": "2524d6356f6cc748cebe6d63c97ffb3ee0f4abea"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/missinggo/prioritybitmap",
+			"Rev": "2524d6356f6cc748cebe6d63c97ffb3ee0f4abea"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/missinggo/pubsub",
+			"Rev": "2524d6356f6cc748cebe6d63c97ffb3ee0f4abea"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/sync",
+			"Rev": "812602587b72df6a2a4f6e30536adc75394a374b"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/bencode",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/data/file",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/data/mmap",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/dht",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/iplist",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/logonce",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/metainfo",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/mmap_span",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/mse",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/peer_protocol",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/tracker",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/torrent/util",
+			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
+		},
+		{
+			"ImportPath": "github.com/anacrolix/utp",
+			"Rev": "0a78608853316110c36128d133e859b4a67a5c2a"
+		},
+		{
+			"ImportPath": "github.com/boltdb/bolt",
+			"Comment": "v1.1.0-81-g0fd4c05",
+			"Rev": "0fd4c0547d204c7b1cad6db6f3adad5f2cf453e5"
+		},
+		{
+			"ImportPath": "github.com/bradfitz/iter",
+			"Rev": "454541ec3da2a73fc34fd049b19ee5777bf19345"
+		},
+		{
+			"ImportPath": "github.com/edsrzf/mmap-go",
+			"Rev": "903d080718bd2877583fe1bd0a19c9cd3e2906ff"
+		},
+		{
+			"ImportPath": "github.com/google/btree",
+			"Rev": "cc6329d4279e3f025a53a83c397d2339b5705c45"
+		},
+		{
+			"ImportPath": "github.com/mailgun/mailgun-go",
+			"Rev": "01bd6a648bb5d95d5f6ebd190fee8bb4158d0339"
+		},
+		{
+			"ImportPath": "github.com/mbanzon/simplehttp",
+			"Rev": "ed64292224debb8a65122f3c2b71d4cd514bc48b"
+		},
+		{
+			"ImportPath": "github.com/ryszard/goskiplist/skiplist",
+			"Rev": "2dfbae5fcf46374f166f8969cb07e167f1be6273"
+		},
+		{
+			"ImportPath": "github.com/tylertreat/BoomFilters",
+			"Rev": "ae0b9585d4b87b2fe0b49ee09270abae7aaad179"
+		},
+		{
+			"ImportPath": "github.com/willf/bitset",
+			"Comment": "v1.0.0-56-g2e6e809",
+			"Rev": "2e6e8094ef4745224150c88c16191c7dceaad16f"
+		},
+		{
+			"ImportPath": "github.com/willf/bloom",
+			"Comment": "v2.0.0-3-gaa3071d",
+			"Rev": "aa3071d9203598166c09553d43e74b588c3d91be"
+		},
+		{
+			"ImportPath": "github.com/zeebo/bencode",
+			"Rev": "9e17a193afc98ea546601d05f036b0b033d15b3e"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "35b06af0720201bc2f326773a80767387544f8c4"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html/atom",
+			"Rev": "35b06af0720201bc2f326773a80767387544f8c4"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "9d4e42a20653790449273b3c85e67d6d8bae6e2e"
+		}
+	]
+}
