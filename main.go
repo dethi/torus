@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/abbot/go-http-auth"
 )
 
 var (
@@ -27,8 +29,9 @@ var (
 	algoliaSearchKey = flag.String("algoliaSearchKey", "", "algolia search key")
 	algoliaIndex     = flag.String("algoliaIndex", "", "algolia index name")
 
-	dbPath   = flag.String("dbPath", "/static/torrents.db", "path to database")
-	dataPath = flag.String("dataPath", "/static/data", "path to data")
+	dbPath       = flag.String("dbPath", "/static/torrents.db", "path to database")
+	dataPath     = flag.String("dataPath", "/static/data", "path to data")
+	htpasswdPath = flag.String("htpasswdPath", "/static/htpasswd", "path to htpasswd")
 
 	migrate    = flag.Bool("migrate", false, "migrate database")
 	activeJobs = flag.Int("activeJobs", 3, "number of active torrents")
@@ -209,7 +212,10 @@ func startService(activeJobs int) {
 		srv.Start(listenAddr)
 	}
 
-	http.HandleFunc("/list", listView)
+	authenticator := auth.NewBasicAuthenticator("tr.dethi.fr",
+		auth.HtpasswdFileProvider(*htpasswdPath))
+
+	http.HandleFunc("/", auth.JustCheck(authenticator, listView))
 	http.Handle("/data/", http.StripPrefix("/data/",
 		http.FileServer(http.Dir(*dataPath))))
 	go http.ListenAndServe(":80", nil)
