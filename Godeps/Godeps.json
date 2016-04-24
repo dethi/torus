@@ -1,11 +1,22 @@
 {
 	"ImportPath": "github.com/dethi/torrent_service",
 	"GoVersion": "go1.6",
+	"GodepVersion": "v62",
 	"Deps": [
 		{
 			"ImportPath": "github.com/RoaringBitmap/roaring",
 			"Comment": "v0.2.0-3-gdda1914",
 			"Rev": "dda1914bb020fa3297225d809c53aaad4a2894c1"
+		},
+		{
+			"ImportPath": "github.com/abbot/go-http-auth",
+			"Comment": "v0.3-10-gca62df3",
+			"Rev": "ca62df34b58d26b6a064246c21c0a18f97813173"
+		},
+		{
+			"ImportPath": "github.com/algolia/algoliasearch-client-go/algoliasearch",
+			"Comment": "1.4.0-16-g50949cc",
+			"Rev": "50949ccec04b06d3fc062b159cc34c4a31e8075c"
 		},
 		{
 			"ImportPath": "github.com/anacrolix/missinggo",
@@ -56,10 +67,6 @@
 			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
 		},
 		{
-			"ImportPath": "github.com/anacrolix/torrent/data/mmap",
-			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
-		},
-		{
 			"ImportPath": "github.com/anacrolix/torrent/dht",
 			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
 		},
@@ -73,10 +80,6 @@
 		},
 		{
 			"ImportPath": "github.com/anacrolix/torrent/metainfo",
-			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
-		},
-		{
-			"ImportPath": "github.com/anacrolix/torrent/mmap_span",
 			"Rev": "b6cd45677902c6985944f11937ecc3f794e3461f"
 		},
 		{
@@ -145,6 +148,18 @@
 		{
 			"ImportPath": "github.com/zeebo/bencode",
 			"Rev": "9e17a193afc98ea546601d05f036b0b033d15b3e"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/bcrypt",
+			"Rev": "7b428712abe956d0e9e1e9a01e163fb6c7171438"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/blowfish",
+			"Rev": "7b428712abe956d0e9e1e9a01e163fb6c7171438"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "35b06af0720201bc2f326773a80767387544f8c4"
 		},
 		{
 			"ImportPath": "golang.org/x/net/html",
