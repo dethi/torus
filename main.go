@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -37,7 +36,7 @@ var (
 
 const (
 	findUrl   = `((?:https?:\/{2})(?:[-\w]+\.)+(?:\w+)(?:\/[-\w]+)*(?:\.[-\w]+)?)`
-	cleanName = `(?i)(\[ *)?[a-z]+.cpasbien.[a-z]+( *\])?`
+	cleanName = `(?i)((\[ *)?[a-z]+.cpasbien.[a-z]+( *\])?)|(web(-?dl)?)|(xvid)`
 )
 
 const listHtml = `Nothing for now sorry`
@@ -136,10 +135,6 @@ func dispatcher(mailer *MailService, newMail <-chan Message, newJob chan<- Recor
 			db.DeleteRequest(r.InfoHash)
 		}
 	}
-}
-
-func CleanName(filename string) string {
-	return strings.Trim(regexClean.ReplaceAllString(filename, ""), " \t-")
 }
 
 func createTarball(r Record) error {

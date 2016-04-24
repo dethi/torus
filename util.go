@@ -3,6 +3,8 @@ package main
 import (
 	"crypto/sha1"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/zeebo/bencode"
 )
@@ -32,4 +34,26 @@ func InfoHash(data []byte) string {
 	}
 	hash := sha1.Sum(binfo)
 	return fmt.Sprintf("%x", hash)
+}
+
+func CleanName(filename string) string {
+	ext := strings.ToLower(filepath.Ext(filename))
+	s := filename[:len(filename)-len(ext)]
+	s = regexClean.ReplaceAllString(s, "")
+	s = strings.TrimSpace(s)
+	s = strings.Replace(s, ".", "-", -1)
+	s = strings.Replace(s, " ", "-", -1)
+	s = strings.Trim(s, "-")
+	s = strings.Title(s)
+
+	var last rune = -1
+	s = strings.Map(func(c rune) rune {
+		if c == '-' && last == '-' {
+			return -1
+		}
+		last = c
+		return c
+	}, s)
+
+	return s + ext
 }
