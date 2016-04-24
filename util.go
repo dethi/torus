@@ -3,11 +3,17 @@ package main
 import (
 	"crypto/sha1"
 	"fmt"
+	"html/template"
 	"path/filepath"
 	"strings"
 
 	"github.com/zeebo/bencode"
 )
+
+func MustTemplate(name string) *template.Template {
+	t := template.New(name).Delims("[[", "]]")
+	return template.Must(t.Parse(string(MustAsset(name))))
+}
 
 func Filter(vs []string, f func(string) bool) []string {
 	vsf := make([]string, 0)

@@ -39,8 +39,6 @@ const (
 	cleanName = `(?i)((\[ *)?[a-z]+.cpasbien.[a-z]+( *\])?)|(web(-?dl)?)|(xvid)`
 )
 
-const listHtml = `Nothing for now sorry`
-
 var regexUrl = regexp.MustCompile(findUrl)
 var regexClean = regexp.MustCompile(cleanName)
 
@@ -211,16 +209,12 @@ func startService(activeJobs int) {
 		srv.Start(listenAddr)
 	}
 
-	http.HandleFunc("/list", listHandler)
+	http.HandleFunc("/list", listView)
 	http.Handle("/data/", http.StripPrefix("/data/",
 		http.FileServer(http.Dir(*dataPath))))
 	go http.ListenAndServe(":80", nil)
 	dispatcher(mailer, newMail, newJob, endJob, quit)
 	fmt.Println("Gracefully stop service...")
-}
-
-func listHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, listHtml)
 }
 
 func main() {
