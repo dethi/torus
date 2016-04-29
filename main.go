@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -61,7 +62,7 @@ type Record struct {
 	tFiles  []string
 }
 
-func dispatcher(mailer *MailService, newMail <-chan Message, newJob chan<- Record,
+func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 	endJob <-chan Record, quit <-chan os.Signal) {
 
 	db := NewDatabase(*dbPath)
@@ -197,15 +198,15 @@ func startService(activeJobs int) {
 	newJob := make(chan Record, 100)
 	endJob := make(chan Record, 100)
 
-	mailer := NewMailService(*mgDomain, *mgKey, *mgPublicKey)
+	mailer := NewMailer(*mgDomain, *mgKey, *mgPublicKey)
 	mailer.ReceiveMsg("/mg-mail", newMail, func(_ string) bool {
 		return true
 	})
 
-	var downloader []*DownloaderService
+	var downloader []*Downloader
 	for i := 0; i < activeJobs; i++ {
 		downloader = append(downloader,
-			NewDownloaderService(newJob, endJob, tmpDir))
+			NewDownloader(newJob, endJob, tmpDir))
 	}
 	for i, srv := range downloader {
 		listenAddr := ":" + strconv.Itoa(50007+i)

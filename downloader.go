@@ -12,7 +12,7 @@ import (
 	"github.com/anacrolix/torrent/metainfo"
 )
 
-type DownloaderService struct {
+type Downloader struct {
 	in  <-chan Record
 	out chan<- Record
 	dir string
@@ -21,19 +21,19 @@ type DownloaderService struct {
 	client *tr.Client
 }
 
-func NewDownloaderService(in <-chan Record, out chan<- Record,
-	dir string) *DownloaderService {
+func NewDownloader(in <-chan Record, out chan<- Record,
+	dir string) *Downloader {
 
-	return &DownloaderService{
+	return &Downloader{
 		in:  in,
 		out: out,
 		dir: dir,
 
-		logger: log.New(os.Stderr, "DownloaderService: ", log.LstdFlags),
+		logger: log.New(os.Stderr, "Downloader: ", log.LstdFlags),
 	}
 }
 
-func (s *DownloaderService) Start(addr string) error {
+func (s *Downloader) Start(addr string) error {
 	cl, err := tr.NewClient(&tr.Config{
 		DataDir:    s.dir,
 		ListenAddr: addr,
@@ -50,7 +50,7 @@ func (s *DownloaderService) Start(addr string) error {
 	return nil
 }
 
-func (s *DownloaderService) accept() {
+func (s *Downloader) accept() {
 	go func() {
 		for record := range s.in {
 			s.logger.Printf("start request: %v", record.InfoHash[:7])
@@ -69,7 +69,7 @@ func (s *DownloaderService) accept() {
 	}()
 }
 
-func (s *DownloaderService) download(record *Record) error {
+func (s *Downloader) download(record *Record) error {
 	tBuf := bytes.NewBuffer(record.torrent)
 	metaInfo, err := metainfo.Load(tBuf)
 	if err != nil {

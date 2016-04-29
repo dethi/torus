@@ -11,21 +11,21 @@ import (
 	"github.com/mailgun/mailgun-go"
 )
 
-type MailService struct {
+type Mailer struct {
 	mg     mailgun.Mailgun
 	logger *log.Logger
 }
 
 type ValidUser func(email string) bool
 
-func NewMailService(domain, apiKey, publicApiKey string) *MailService {
-	return &MailService{
+func NewMailer(domain, apiKey, publicApiKey string) *Mailer {
+	return &Mailer{
 		mg:     mailgun.NewMailgun(domain, apiKey, publicApiKey),
-		logger: log.New(os.Stderr, "MailService: ", log.LstdFlags),
+		logger: log.New(os.Stderr, "Mailer: ", log.LstdFlags),
 	}
 }
 
-func (s *MailService) ReceiveMsg(pattern string, out chan<- Message,
+func (s *Mailer) ReceiveMsg(pattern string, out chan<- Message,
 	auth ValidUser) {
 
 	http.HandleFunc(pattern, func(_ http.ResponseWriter, r *http.Request) {
@@ -39,7 +39,7 @@ func (s *MailService) ReceiveMsg(pattern string, out chan<- Message,
 	})
 }
 
-func (s *MailService) SendMsg(to, title, msg string) error {
+func (s *Mailer) SendMsg(to, title, msg string) error {
 	m := s.mg.NewMessage("Torrent Service <tr@dethi.fr>", title, msg, to)
 	if _, _, err := s.mg.Send(m); err != nil {
 		return fmt.Errorf("SendMessage: %v", err)
@@ -47,7 +47,7 @@ func (s *MailService) SendMsg(to, title, msg string) error {
 	return nil
 }
 
-func (s *MailService) NotifyUser(r *Record, to []string) {
+func (s *Mailer) NotifyUser(r *Record, to []string) {
 	for _, email := range to {
 		err := s.SendMsg(email, r.Name,
 			"https://tr.dethi.fr/data/"+r.InfoHash+".tar")
