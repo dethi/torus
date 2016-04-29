@@ -12,10 +12,6 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-var (
-	tBucket = []byte("Torrents")
-)
-
 type Database struct {
 	db     *bolt.DB
 	index  *algoliasearch.Index
