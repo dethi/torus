@@ -136,7 +136,7 @@ func createTarball(r Record) error {
 			}
 
 			hdr := &tar.Header{
-				Name: filepath.Base(CleanName(path)),
+				Name: CleanName(filepath.Base(path)),
 				Mode: 0644,
 				Size: stat.Size(),
 			}
