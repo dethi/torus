@@ -136,9 +136,10 @@ func createTarball(r Record) error {
 			}
 
 			hdr := &tar.Header{
-				Name: CleanName(filepath.Base(path)),
-				Mode: 0644,
-				Size: stat.Size(),
+				Name:    CleanName(filepath.Base(path)),
+				Mode:    0644,
+				Size:    stat.Size(),
+				ModTime: stat.ModTime(),
 			}
 			if err := tw.WriteHeader(hdr); err != nil {
 				return fmt.Errorf("write header: %v: %v", path, err)
