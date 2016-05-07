@@ -11,4 +11,8 @@ build:
 push:
 	docker push dethi/torrent_service
 
-.PHONY: release prod build push
+clean:
+	go clean
+	rm -f *.upx
+
+.PHONY: release prod build push clean
