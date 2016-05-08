@@ -127,6 +127,45 @@ func (s *Database) ReindexRecords() {
 	}
 }
 
+func (s *Database) DeleteRecords(age time.Duration) {
+	deleted := false
+
+	err := s.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(tBucket)
+
+		return b.ForEach(func(k, v []byte) error {
+			var blob Record
+			if err := json.Unmarshal(v, &blob); err != nil {
+				return fmt.Errorf("unmarshal %v: %v", k[:7], err)
+			}
+
+			if time.Since(blob.EndTime) > age {
+				deleted = true
+				if err := b.Delete(k); err != nil {
+					return fmt.Errorf("delete records: %v: %v", k[:7], err)
+				}
+
+				var size int64
+				if stat, err := os.Stat(blob.FilePath); err == nil {
+					size = stat.Size()
+				}
+				os.Remove(blob.FilePath)
+				s.logger.Printf("records removed: %v: %v bytes", k[:7], size)
+			}
+
+			return nil
+		})
+	})
+	if err != nil {
+		s.logger.Printf("remove old records: %v", err)
+	}
+
+	if deleted {
+		// TODO: remove records one by one instead of reindexing all
+		s.ReindexRecords()
+	}
+}
+
 func (s *Database) GetRequest(infoHash string) []string {
 	s.Lock()
 	defer s.Unlock()

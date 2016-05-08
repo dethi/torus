@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/abbot/go-http-auth"
+	"github.com/carlescere/scheduler"
 )
 
 type Record struct {
@@ -40,6 +41,10 @@ func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 
 	db := NewDatabase(*dbPath)
 	defer db.Close()
+
+	scheduler.Every().Day().Run(func() {
+		db.DeleteRecords(2 * 30 * 24 * time.Hour)
+	})
 
 	for {
 		select {

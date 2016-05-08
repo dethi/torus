@@ -171,6 +171,12 @@
 			"revisionTime": "2014-01-24T04:19:15Z"
 		},
 		{
+			"checksumSHA1": "KfvemLBC4qcwS1Y/lDi+mwM1D7w=",
+			"path": "github.com/carlescere/scheduler",
+			"revision": "5e2cc370dae40237c2a08b9181d4c84faf4150e9",
+			"revisionTime": "2016-03-15T23:45:36Z"
+		},
+		{
 			"checksumSHA1": "le+6Myhy6touo/7OCqaJmjtm6Z0=",
 			"path": "github.com/edsrzf/mmap-go",
 			"revision": "903d080718bd2877583fe1bd0a19c9cd3e2906ff",
