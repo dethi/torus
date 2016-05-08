@@ -1,11 +1,13 @@
 <!doctype html>
 <html>
   <head>
-    <link rel="stylesheet" href="//cdn.jsdelivr.net/instantsearch.js/1/instantsearch.min.css" />
+    <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/instantsearch.js/1/instantsearch.min.css" />
     <title>Torrent Service</title>
   </head>
   <body>
     <input type="text" id="search-box" />
+    <div id="sort-by-container"></div>
+    <div id="stats-container"></div>
     <div id="hits-container"></div>
     <div id="pagination-container"></div>
 
@@ -24,6 +26,22 @@
 		  autofocus: true,
 		  poweredBy: true,
 
+        })
+      );
+
+      search.addWidget(
+        instantsearch.widgets.sortBySelector({
+          container: '#sort-by-container',
+          indices: [
+            {name: '[[.IndexName]]', label: 'Descending'},
+            {name: '[[.IndexName]]_asc', label: 'Ascending'}
+          ]
+        })
+      );
+
+      search.addWidget(
+        instantsearch.widgets.stats({
+          container: '#stats-container'
         })
       );
 
