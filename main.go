@@ -42,8 +42,8 @@ func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 	db := NewDatabase(*dbPath)
 	defer db.Close()
 
-	scheduler.Every().Day().Run(func() {
-		db.DeleteRecords(2 * 30 * 24 * time.Hour)
+	scheduler.Every(1).Hours().Run(func() {
+		db.DeleteRecords(2 * 24 * time.Hour)
 	})
 
 	for {

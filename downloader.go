@@ -10,6 +10,7 @@ import (
 
 	tr "github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
+	"github.com/dethi/goutil/fs"
 )
 
 type Downloader struct {
@@ -74,6 +75,22 @@ func (s *Downloader) download(record *Record) error {
 	metaInfo, err := metainfo.Load(tBuf)
 	if err != nil {
 		return fmt.Errorf("loading metainfo: %v", err)
+	}
+
+	size := uint64(metaInfo.Info.TotalLength())
+	fsStat, err := fs.GetFsStats(*dataPath)
+	if err != nil {
+		return fmt.Errorf("stat fs: %v", err)
+	}
+
+	// Waiting for filesystem space
+	for fsStat.Available < 2*size {
+		time.Sleep(10 * time.Minute)
+
+		// Update value
+		if v, _ := fs.GetFsStats(*dataPath); v != nil {
+			fsStat = v
+		}
 	}
 
 	t, err := s.client.AddTorrent(metaInfo)
