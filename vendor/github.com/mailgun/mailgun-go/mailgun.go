@@ -100,7 +100,7 @@ import (
 )
 
 const (
-	apiBase                 = "https://api.mailgun.net/v2"
+	apiBase                 = "https://api.mailgun.net/v3"
 	messagesEndpoint        = "messages"
 	mimeMessagesEndpoint    = "messages.mime"
 	addressValidateEndpoint = "address/validate"
@@ -163,6 +163,7 @@ type Mailgun interface {
 	GetUnsubscribesByAddress(string) (int, []Unsubscription, error)
 	Unsubscribe(address, tag string) error
 	RemoveUnsubscribe(string) error
+	RemoveUnsubscribeWithTag(a, t string) error
 	CreateComplaint(string) error
 	DeleteComplaint(string) error
 	GetRoutes(limit, skip int) (int, []Route, error)

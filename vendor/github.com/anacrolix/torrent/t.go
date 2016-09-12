@@ -18,11 +18,13 @@ func (t *Torrent) InfoHash() metainfo.Hash {
 // Returns a channel that is closed when the info (.Info()) for the torrent
 // has become available.
 func (t *Torrent) GotInfo() <-chan struct{} {
-	return t.gotMetainfo
+	t.cl.mu.Lock()
+	defer t.cl.mu.Unlock()
+	return t.gotMetainfo.C()
 }
 
 // Returns the metainfo info dictionary, or nil if it's not yet available.
-func (t *Torrent) Info() *metainfo.InfoEx {
+func (t *Torrent) Info() *metainfo.Info {
 	return t.info
 }
 
@@ -30,6 +32,7 @@ func (t *Torrent) Info() *metainfo.InfoEx {
 // the data requested is actually available.
 func (t *Torrent) NewReader() (ret *Reader) {
 	ret = &Reader{
+		mu:        &t.cl.mu,
 		t:         t,
 		readahead: 5 * 1024 * 1024,
 	}
@@ -85,7 +88,7 @@ func (t *Torrent) SubscribePieceStateChanges() *pubsub.Subscription {
 func (t *Torrent) Seeding() bool {
 	t.cl.mu.Lock()
 	defer t.cl.mu.Unlock()
-	return t.cl.seeding(t)
+	return t.seeding()
 }
 
 // Clobbers the torrent display name. The display name is used as the torrent
@@ -115,10 +118,10 @@ func (t *Torrent) Length() int64 {
 
 // Returns a run-time generated metainfo for the torrent that includes the
 // info bytes and announce-list as currently known to the client.
-func (t *Torrent) Metainfo() *metainfo.MetaInfo {
+func (t *Torrent) Metainfo() metainfo.MetaInfo {
 	t.cl.mu.Lock()
 	defer t.cl.mu.Unlock()
-	return t.metainfo()
+	return t.newMetaInfo()
 }
 
 func (t *Torrent) addReader(r *Reader) {
@@ -173,12 +176,11 @@ func (t *Torrent) Files() (ret []File) {
 	return
 }
 
-func (t *Torrent) AddPeers(pp []Peer) error {
+func (t *Torrent) AddPeers(pp []Peer) {
 	cl := t.cl
 	cl.mu.Lock()
 	defer cl.mu.Unlock()
-	cl.addPeers(t, pp)
-	return nil
+	t.addPeers(pp)
 }
 
 // Marks the entire torrent for download. Requires the info first, see
@@ -195,4 +197,10 @@ func (t *Torrent) String() string {
 		s = fmt.Sprintf("%x", t.infoHash)
 	}
 	return s
+}
+
+func (t *Torrent) AddTrackers(announceList [][]string) {
+	t.cl.mu.Lock()
+	defer t.cl.mu.Unlock()
+	t.addTrackers(announceList)
 }

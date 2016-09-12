@@ -42,7 +42,7 @@ func unmarshalExtensions(_type byte, b []byte) (n int, ef []extensionField, err 
 		}
 		ef = append(ef, extensionField{
 			Type:  _type,
-			Bytes: append([]byte{}, b[2:int(b[1])+2]...),
+			Bytes: append([]byte(nil), b[2:int(b[1])+2]...),
 		})
 		_type = b[0]
 		n += 2 + int(b[1])
@@ -103,22 +103,33 @@ func (h *header) Marshal(p []byte) (n int) {
 		}
 		p = p[2+len(ext.Bytes):]
 	}
+	*_type = 0
 	if len(p) != 0 {
 		panic("header length changed")
 	}
 	return
 }
 
-type selectiveAckBitmask []byte
-
-func (me selectiveAckBitmask) NumBits() int {
-	return len(me) * 8
+type selectiveAckBitmask struct {
+	Bytes []byte
 }
 
-func (me selectiveAckBitmask) SetBit(index int) {
-	me[index/8] |= 1 << uint(index%8)
+func (me *selectiveAckBitmask) expandBytesForBit(index int) {
+	minLen := (3 + (index / 8) + 1) / 4 * 4
+	for len(me.Bytes) < minLen {
+		me.Bytes = append(me.Bytes, 0)
+	}
 }
 
-func (me selectiveAckBitmask) BitIsSet(index int) bool {
-	return me[index/8]>>uint(index%8)&1 == 1
+func (me *selectiveAckBitmask) NumBits() int {
+	return len(me.Bytes) * 8
+}
+
+func (me *selectiveAckBitmask) SetBit(index int) {
+	me.expandBytesForBit(index)
+	me.Bytes[index/8] |= 1 << uint(index%8)
+}
+
+func (me *selectiveAckBitmask) BitIsSet(index int) bool {
+	return me.Bytes[index/8]>>uint(index%8)&1 == 1
 }

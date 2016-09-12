@@ -1,0 +1,92 @@
+hash: 275726502cfba16f9ba0cd51c0a02c940afd22dbb91c869fa1b4963b475d4adf
+updated: 2016-09-12T23:47:56.62446917+02:00
+imports:
+- name: github.com/abbot/go-http-auth
+  version: efc9484eee77263a11f158ef4f30fcc30298a942
+- name: github.com/algolia/algoliasearch-client-go
+  version: 4467dcad0f94e7e88d621c3a74b5696ba2ba095e
+  subpackages:
+  - algoliasearch
+- name: github.com/anacrolix/missinggo
+  version: 52a4107125de297154688361523087a7f2a416b9
+  subpackages:
+  - bitmap
+  - httptoo
+  - inproc
+  - itertools
+  - orderedmap
+  - perf
+  - pproffd
+  - prioritybitmap
+  - pubsub
+  - resource
+  - slices
+- name: github.com/anacrolix/sync
+  version: 812602587b72df6a2a4f6e30536adc75394a374b
+- name: github.com/anacrolix/torrent
+  version: 720450320629a4997394cf85c23e387960d517fd
+  subpackages:
+  - bencode
+  - dht
+  - dht/krpc
+  - iplist
+  - logonce
+  - metainfo
+  - mmap_span
+  - mse
+  - peer_protocol
+  - storage
+  - tracker
+  - util
+- name: github.com/anacrolix/utp
+  version: 59dfcf2995f0a175d717fe0b5b7c526771a0ad83
+- name: github.com/boltdb/bolt
+  version: 583e8937c61f1af6513608ccc75c97b6abdf4ff9
+- name: github.com/bradfitz/iter
+  version: 454541ec3da2a73fc34fd049b19ee5777bf19345
+- name: github.com/carlescere/scheduler
+  version: ddcf6a6be3e8bd4b480f96031d9e1f3abecf2767
+- name: github.com/dethi/goutil
+  version: 22c8a006b0c42d4e834762c059751571784fba26
+  subpackages:
+  - fs
+- name: github.com/dustin/go-humanize
+  version: 2fcb5204cdc65b4bec9fd0a87606bb0d0e3c54e8
+- name: github.com/edsrzf/mmap-go
+  version: 935e0e8a636ca4ba70b713f3e38a19e1b77739e8
+- name: github.com/google/btree
+  version: 7d79101e329e5a3adf994758c578dab82b90c017
+- name: github.com/mailgun/mailgun-go
+  version: 369a1fa57ce6fb314e627087b9fff0db5c266c0f
+- name: github.com/mattn/go-sqlite3
+  version: 3fb7a0e792edd47bf0cf1e919dfc14e2be412e15
+- name: github.com/RoaringBitmap/roaring
+  version: 175c763f3ba3bae6d079757c5222682002869a59
+- name: github.com/ryszard/goskiplist
+  version: 2dfbae5fcf46374f166f8969cb07e167f1be6273
+  subpackages:
+  - skiplist
+- name: github.com/tylertreat/BoomFilters
+  version: ae0b9585d4b87b2fe0b49ee09270abae7aaad179
+- name: github.com/willf/bitset
+  version: 1730870b454dde6756091d8c6a3d780ef123674c
+- name: github.com/willf/bloom
+  version: a8bcd3701532304dfc7e7bcb2f526119e394bfb7
+- name: github.com/zeebo/bencode
+  version: 9e17a193afc98ea546601d05f036b0b033d15b3e
+- name: golang.org/x/crypto
+  version: e311231e83195f401421a286060d65643f9c9d40
+  subpackages:
+  - bcrypt
+  - blowfish
+- name: golang.org/x/net
+  version: 749a502dd1eaf3e5bfd4f8956748c502357c0bbe
+  subpackages:
+  - context
+  - html
+  - html/atom
+- name: golang.org/x/sys
+  version: 30de6d19a3bd89a5f38ae4028e23aaa5582648af
+  subpackages:
+  - unix
+testImports: []

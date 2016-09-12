@@ -13,7 +13,6 @@ package utp
 
 import (
 	"errors"
-	"expvar"
 	"fmt"
 	"net"
 	"os"
@@ -31,11 +30,10 @@ const (
 	backlog = 50
 
 	// IPv6 min MTU is 1280, -40 for IPv6 header, and ~8 for fragment header?
-	minMTU     = 1232
-	recvWindow = 1 << 18 // 256KiB
-	// uTP header of 20, +2 for the next extension, and 8 bytes of selective
+	minMTU = 1438
+	// uTP header of 20, +2 for the next extension, and an optional selective
 	// ACK.
-	maxHeaderSize  = 30
+	maxHeaderSize  = 20 + 2 + (((maxUnackedInbound+7)/8)+3)/4*4
 	maxPayloadSize = minMTU - maxHeaderSize
 	maxRecvSize    = 0x2000
 
@@ -52,17 +50,9 @@ const (
 )
 
 var (
-	ackSkippedResends = expvar.NewInt("utpAckSkippedResends")
-	// Inbound packets processed by a Conn.
-	deliveriesProcessed = expvar.NewInt("utpDeliveriesProcessed")
-	sentStatePackets    = expvar.NewInt("utpSentStatePackets")
-	// State packets that we managed not to send.
-	unsentStatePackets = expvar.NewInt("utpUnsentStatePackets")
-	unusedReads        = expvar.NewInt("utpUnusedReads")
-	unusedReadsDropped = expvar.NewInt("utpUnusedReadsDropped")
-	// sendBufferPool     = sync.Pool{
-	// 	New: func() interface{} { return make([]byte, minMTU) },
-	// }
+	sendBufferPool = sync.Pool{
+		New: func() interface{} { return make([]byte, minMTU) },
+	}
 	// This is the latency we assume on new connections. It should be higher
 	// than the latency we expect on most connections to prevent excessive
 	// resending to peers that take a long time to respond, before we've got a
@@ -106,7 +96,6 @@ type syn struct {
 
 var (
 	mu                         pprofsync.RWMutex
-	cond                       = sync.Cond{L: &mu}
 	sockets                    = map[*Socket]struct{}{}
 	logLevel                   = 0
 	artificialPacketDropChance = 0.0

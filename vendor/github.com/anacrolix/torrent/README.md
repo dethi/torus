@@ -3,7 +3,6 @@
 [![Join the chat at https://gitter.im/anacrolix/torrent](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/anacrolix/torrent?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://drone.io/github.com/anacrolix/torrent/status.png)](https://drone.io/github.com/anacrolix/torrent/latest)
 [![GoDoc](https://godoc.org/github.com/anacrolix/torrent?status.svg)](https://godoc.org/github.com/anacrolix/torrent)
-[![Coverage](http://gocover.io/_badge/github.com/anacrolix/torrent)](http://gocover.io/github.com/anacrolix/torrent)
 
 This repository implements BitTorrent-related packages and command-line utilities in Go. The emphasis is on use as a library from other projects. It's been used 24/7 in production by a downstream, private service since late 2014.
 
@@ -23,6 +22,8 @@ There is a small example in the [package documentation](https://godoc.org/github
 
  * [Go Peerflix](https://github.com/Sioro-Neoku/go-peerflix)
  * [Cloud Torrent](https://github.com/jpillora/cloud-torrent)
+ * [Android Torrent Client](https://github.com/axet/android-torrent-client)
+ * [Android libtorrent](https://github.com/axet/libtorrent)
 
 ## Commands
 
@@ -32,10 +33,12 @@ Note that the [`godo`](https://github.com/anacrolix/godo) command which is invok
 
 ### torrent
 
-Downloads torrents from the command-line.
+Downloads torrents from the command-line. This first example does not use `godo`.
 
 	$ go get github.com/anacrolix/torrent/cmd/torrent
+    # Now 'torrent' should be in $GOPATH/bin, which should be in $PATH.
 	$ torrent 'magnet:?xt=urn:btih:KRWPCX3SJUM4IMM4YF5RPHL6ANPYTQPU'
+    ubuntu-14.04.2-desktop-amd64.iso [===================================================================>]  99% downloading (1.0 GB/1.0 GB)
     2015/04/01 02:08:20 main.go:137: downloaded ALL the torrents
     $ md5sum ubuntu-14.04.2-desktop-amd64.iso
     1b305d585b1918f297164add46784116  ubuntu-14.04.2-desktop-amd64.iso

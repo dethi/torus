@@ -6,73 +6,89 @@ import (
 	"path/filepath"
 
 	"github.com/anacrolix/missinggo"
+	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/anacrolix/torrent/metainfo"
 )
 
-type fileStorage struct {
-	baseDir   string
-	completed map[[20]byte]bool
+// File-based storage for torrents, that isn't yet bound to a particular
+// torrent.
+type fileClientImpl struct {
+	baseDir string
 }
 
-func NewFile(baseDir string) I {
-	return &fileStorage{
+func NewFile(baseDir string) ClientImpl {
+	return &fileClientImpl{
 		baseDir: baseDir,
 	}
 }
 
-func (fs *fileStorage) OpenTorrent(info *metainfo.InfoEx) (Torrent, error) {
-	return fileTorrentStorage{fs}, nil
-}
-
-type fileTorrentStorage struct {
-	*fileStorage
-}
-
-func (fs *fileStorage) Piece(p metainfo.Piece) Piece {
-	_io := &fileStorageTorrent{
-		p.Info,
-		fs.baseDir,
+func (fs *fileClientImpl) OpenTorrent(info *metainfo.Info, infoHash metainfo.Hash) (TorrentImpl, error) {
+	err := CreateNativeZeroLengthFiles(info, fs.baseDir)
+	if err != nil {
+		return nil, err
 	}
-	return &fileStoragePiece{
+	return &fileTorrentImpl{
 		fs,
+		info,
+		infoHash,
+		pieceCompletionForDir(fs.baseDir),
+	}, nil
+}
+
+// File-based torrent storage, not yet bound to a Torrent.
+type fileTorrentImpl struct {
+	fs         *fileClientImpl
+	info       *metainfo.Info
+	infoHash   metainfo.Hash
+	completion pieceCompletion
+}
+
+func (fts *fileTorrentImpl) Piece(p metainfo.Piece) PieceImpl {
+	// Create a view onto the file-based torrent storage.
+	_io := fileTorrentImplIO{fts}
+	// Return the appropriate segments of this.
+	return &fileStoragePiece{
+		fts,
 		p,
 		missinggo.NewSectionWriter(_io, p.Offset(), p.Length()),
 		io.NewSectionReader(_io, p.Offset(), p.Length()),
 	}
 }
 
-func (fs *fileStorage) Close() error {
+func (fs *fileTorrentImpl) Close() error {
+	fs.completion.Close()
 	return nil
 }
 
-type fileStoragePiece struct {
-	*fileStorage
-	p metainfo.Piece
-	io.WriterAt
-	io.ReaderAt
-}
-
-func (fs *fileStoragePiece) GetIsComplete() bool {
-	return fs.completed[fs.p.Hash()]
-}
-
-func (fs *fileStoragePiece) MarkComplete() error {
-	if fs.completed == nil {
-		fs.completed = make(map[[20]byte]bool)
+// Creates natives files for any zero-length file entries in the info. This is
+// a helper for file-based storages, which don't address or write to zero-
+// length files because they have no corresponding pieces.
+func CreateNativeZeroLengthFiles(info *metainfo.Info, baseDir string) (err error) {
+	for _, fi := range info.UpvertedFiles() {
+		if fi.Length != 0 {
+			continue
+		}
+		name := filepath.Join(append([]string{baseDir, info.Name}, fi.Path...)...)
+		os.MkdirAll(filepath.Dir(name), 0750)
+		var f io.Closer
+		f, err = os.Create(name)
+		if err != nil {
+			break
+		}
+		f.Close()
 	}
-	fs.completed[fs.p.Hash()] = true
-	return nil
+	return
 }
 
-type fileStorageTorrent struct {
-	info    *metainfo.InfoEx
-	baseDir string
+// Exposes file-based storage of a torrent, as one big ReadWriterAt.
+type fileTorrentImplIO struct {
+	fts *fileTorrentImpl
 }
 
 // Returns EOF on short or missing file.
-func (fst *fileStorageTorrent) readFileAt(fi metainfo.FileInfo, b []byte, off int64) (n int, err error) {
-	f, err := os.Open(fst.fileInfoName(fi))
+func (fst *fileTorrentImplIO) readFileAt(fi metainfo.FileInfo, b []byte, off int64) (n int, err error) {
+	f, err := os.Open(fst.fts.fileInfoName(fi))
 	if os.IsNotExist(err) {
 		// File missing is treated the same as a short file.
 		err = io.EOF
@@ -100,8 +116,8 @@ func (fst *fileStorageTorrent) readFileAt(fi metainfo.FileInfo, b []byte, off in
 }
 
 // Only returns EOF at the end of the torrent. Premature EOF is ErrUnexpectedEOF.
-func (fst *fileStorageTorrent) ReadAt(b []byte, off int64) (n int, err error) {
-	for _, fi := range fst.info.UpvertedFiles() {
+func (fst fileTorrentImplIO) ReadAt(b []byte, off int64) (n int, err error) {
+	for _, fi := range fst.fts.info.UpvertedFiles() {
 		for off < fi.Length {
 			n1, err1 := fst.readFileAt(fi, b, off)
 			n += n1
@@ -128,8 +144,8 @@ func (fst *fileStorageTorrent) ReadAt(b []byte, off int64) (n int, err error) {
 	return
 }
 
-func (fst *fileStorageTorrent) WriteAt(p []byte, off int64) (n int, err error) {
-	for _, fi := range fst.info.UpvertedFiles() {
+func (fst fileTorrentImplIO) WriteAt(p []byte, off int64) (n int, err error) {
+	for _, fi := range fst.fts.info.UpvertedFiles() {
 		if off >= fi.Length {
 			off -= fi.Length
 			continue
@@ -138,7 +154,7 @@ func (fst *fileStorageTorrent) WriteAt(p []byte, off int64) (n int, err error) {
 		if int64(n1) > fi.Length-off {
 			n1 = int(fi.Length - off)
 		}
-		name := fst.fileInfoName(fi)
+		name := fst.fts.fileInfoName(fi)
 		os.MkdirAll(filepath.Dir(name), 0770)
 		var f *os.File
 		f, err = os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0660)
@@ -160,6 +176,6 @@ func (fst *fileStorageTorrent) WriteAt(p []byte, off int64) (n int, err error) {
 	return
 }
 
-func (fst *fileStorageTorrent) fileInfoName(fi metainfo.FileInfo) string {
-	return filepath.Join(append([]string{fst.baseDir, fst.info.Name}, fi.Path...)...)
+func (fts *fileTorrentImpl) fileInfoName(fi metainfo.FileInfo) string {
+	return filepath.Join(append([]string{fts.fs.baseDir, fts.info.Name}, fi.Path...)...)
 }

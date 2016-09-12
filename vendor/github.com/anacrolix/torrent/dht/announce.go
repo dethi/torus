@@ -9,6 +9,7 @@ import (
 	"github.com/anacrolix/sync"
 	"github.com/willf/bloom"
 
+	"github.com/anacrolix/torrent/dht/krpc"
 	"github.com/anacrolix/torrent/logonce"
 )
 
@@ -60,7 +61,7 @@ func (s *Server) Announce(infoHash string, port int, impliedPort bool) (*Announc
 		return
 	}()
 	s.mu.Unlock()
-	if len(startAddrs) == 0 {
+	if len(startAddrs) == 0 && !s.config.NoDefaultBootstrap {
 		addrs, err := bootstrapAddrs(s.bootstrapNodes)
 		if err != nil {
 			return nil, err
@@ -115,10 +116,20 @@ func (s *Server) Announce(infoHash string, port int, impliedPort bool) (*Announc
 	return disc, nil
 }
 
+func validNodeAddr(addr Addr) bool {
+	ua := addr.UDPAddr()
+	if ua.Port == 0 {
+		return false
+	}
+	if ip4 := ua.IP.To4(); ip4 != nil && ip4[0] == 0 {
+		return false
+	}
+	return true
+}
+
 // TODO: Merge this with maybeGetPeersFromAddr.
 func (a *Announce) gotNodeAddr(addr Addr) {
-	if addr.UDPAddr().Port == 0 {
-		// Not a contactable address.
+	if !validNodeAddr(addr) {
 		return
 	}
 	if a.triedAddrs.Test([]byte(addr.String())) {
@@ -158,8 +169,8 @@ func (a *Announce) transactionClosed() {
 	a.maybeClose()
 }
 
-func (a *Announce) responseNode(node NodeInfo) {
-	a.gotNodeAddr(node.Addr)
+func (a *Announce) responseNode(node krpc.NodeInfo) {
+	a.gotNodeAddr(NewAddr(node.Addr))
 }
 
 func (a *Announce) closingCh() chan struct{} {
@@ -191,7 +202,7 @@ func (a *Announce) getPeers(addr Addr) error {
 	if err != nil {
 		return err
 	}
-	t.SetResponseHandler(func(m Msg, ok bool) {
+	t.SetResponseHandler(func(m krpc.Msg, ok bool) {
 		// Register suggested nodes closer to the target info-hash.
 		if m.R != nil {
 			a.mu.Lock()
@@ -201,8 +212,8 @@ func (a *Announce) getPeers(addr Addr) error {
 			a.mu.Unlock()
 
 			if vs := m.R.Values; len(vs) != 0 {
-				nodeInfo := NodeInfo{
-					Addr: t.remoteAddr,
+				nodeInfo := krpc.NodeInfo{
+					Addr: t.remoteAddr.UDPAddr(),
 				}
 				copy(nodeInfo.ID[:], m.SenderID())
 				select {
@@ -233,8 +244,8 @@ func (a *Announce) getPeers(addr Addr) error {
 // peers that a node has reported as being in the swarm for a queried info
 // hash.
 type PeersValues struct {
-	Peers    []Peer // Peers given in get_peers response.
-	NodeInfo        // The node that gave the response.
+	Peers         []Peer // Peers given in get_peers response.
+	krpc.NodeInfo        // The node that gave the response.
 }
 
 // Stop the announce.

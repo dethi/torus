@@ -36,9 +36,10 @@ const (
 	// http://www.bittorrent.org/beps/bep_0005.html
 	defaultExtensionBytes = "\x00\x00\x00\x00\x00\x10\x00\x01"
 
-	socketsPerTorrent     = 80
-	torrentPeersHighWater = 200
-	torrentPeersLowWater  = 50
+	defaultEstablishedConnsPerTorrent = 80
+	defaultHalfOpenConnsPerTorrent    = 80
+	torrentPeersHighWater             = 200
+	torrentPeersLowWater              = 50
 
 	// Limit how long handshake can take. This is to reduce the lingering
 	// impact of a few bad apples. 4s loses 1% of successful handshakes that
@@ -60,10 +61,9 @@ var (
 
 	peersAddedBySource = expvar.NewMap("peersAddedBySource")
 
-	uploadChunksPosted    = expvar.NewInt("uploadChunksPosted")
-	unexpectedCancels     = expvar.NewInt("unexpectedCancels")
-	postedCancels         = expvar.NewInt("postedCancels")
-	duplicateConnsAvoided = expvar.NewInt("duplicateConnsAvoided")
+	uploadChunksPosted = expvar.NewInt("uploadChunksPosted")
+	unexpectedCancels  = expvar.NewInt("unexpectedCancels")
+	postedCancels      = expvar.NewInt("postedCancels")
 
 	pieceHashedCorrect    = expvar.NewInt("pieceHashedCorrect")
 	pieceHashedNotCorrect = expvar.NewInt("pieceHashedNotCorrect")

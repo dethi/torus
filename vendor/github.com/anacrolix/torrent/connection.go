@@ -8,8 +8,11 @@ import (
 	"expvar"
 	"fmt"
 	"io"
+	"log"
+	"math/rand"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -43,9 +46,12 @@ type connection struct {
 	uTP       bool
 	closed    missinggo.Event
 
+	stats                  ConnStats
 	UnwantedChunksReceived int
 	UsefulChunksReceived   int
 	chunksSent             int
+	goodPiecesDirtied      int
+	badPiecesDirtied       int
 
 	lastMessageReceived     time.Time
 	completedHandshake      time.Time
@@ -95,15 +101,15 @@ func (cn *connection) mu() sync.Locker {
 	return &cn.t.cl.mu
 }
 
-func (cl *Client) newConnection(nc net.Conn) (c *connection) {
+func newConnection(nc net.Conn, l sync.Locker) (c *connection) {
 	c = &connection{
 		conn: nc,
-		rw:   nc,
 
 		Choked:          true,
 		PeerChoked:      true,
 		PeerMaxRequests: 250,
 	}
+	c.rw = connStatsReadWriter{nc, l, c}
 	return
 }
 
@@ -217,8 +223,10 @@ func (cn *connection) Close() {
 	cn.closed.Set()
 	cn.discardPieceInclination()
 	cn.pieceRequestOrder.Clear()
-	// TODO: This call blocks sometimes, why?
-	go cn.conn.Close()
+	if cn.conn != nil {
+		// TODO: This call blocks sometimes, why?
+		go cn.conn.Close()
+	}
 }
 
 func (cn *connection) PeerHasPiece(piece int) bool {
@@ -403,7 +411,7 @@ func (cn *connection) writer(keepAliveTimeout time.Duration) {
 	keepAliveTimer := time.NewTimer(keepAliveTimeout)
 	for {
 		cn.mu().Lock()
-		for cn.outgoingUnbufferedMessages.Len() != 0 {
+		for cn.outgoingUnbufferedMessages != nil && cn.outgoingUnbufferedMessages.Len() != 0 {
 			msg := cn.outgoingUnbufferedMessages.Remove(cn.outgoingUnbufferedMessages.Front()).(pp.Message)
 			cn.mu().Unlock()
 			b, err := msg.MarshalBinary()
@@ -420,6 +428,7 @@ func (cn *connection) writer(keepAliveTimeout time.Duration) {
 				panic("short write")
 			}
 			cn.mu().Lock()
+			cn.wroteMsg(&msg)
 		}
 		cn.outgoingUnbufferedMessagesNotEmpty.Clear()
 		cn.mu().Unlock()
@@ -465,7 +474,10 @@ func (cn *connection) Bitfield(haves []bool) {
 		Type:     pp.Bitfield,
 		Bitfield: haves,
 	})
-	cn.sentHaves = haves
+	// Make a copy of haves, as that's read when the message is marshalled
+	// without the lock. Also it obviously shouldn't change in the Msg due to
+	// changes in .sentHaves.
+	cn.sentHaves = append([]bool(nil), haves...)
 }
 
 func (cn *connection) updateRequests() {
@@ -526,7 +538,7 @@ func (cn *connection) updatePiecePriority(piece int) {
 	default:
 		panic(tpp)
 	}
-	prio += piece
+	prio += piece / 2
 	cn.pieceRequestOrder.Set(piece, prio)
 	cn.updateRequests()
 }
@@ -611,4 +623,292 @@ func (cn *connection) peerSentHaveNone() error {
 	cn.peerHasAll = false
 	cn.peerPiecesChanged()
 	return nil
+}
+
+func (c *connection) requestPendingMetadata() {
+	if c.t.haveInfo() {
+		return
+	}
+	if c.PeerExtensionIDs["ut_metadata"] == 0 {
+		// Peer doesn't support this.
+		return
+	}
+	// Request metadata pieces that we don't have in a random order.
+	var pending []int
+	for index := 0; index < c.t.metadataPieceCount(); index++ {
+		if !c.t.haveMetadataPiece(index) && !c.requestedMetadataPiece(index) {
+			pending = append(pending, index)
+		}
+	}
+	for _, i := range rand.Perm(len(pending)) {
+		c.requestMetadataPiece(pending[i])
+	}
+}
+
+func (cn *connection) wroteMsg(msg *pp.Message) {
+	cn.stats.wroteMsg(msg)
+	cn.t.stats.wroteMsg(msg)
+}
+
+func (cn *connection) readMsg(msg *pp.Message) {
+	cn.stats.readMsg(msg)
+	cn.t.stats.readMsg(msg)
+}
+
+func (cn *connection) wroteBytes(n int64) {
+	cn.stats.wroteBytes(n)
+	if cn.t != nil {
+		cn.t.stats.wroteBytes(n)
+	}
+}
+
+func (cn *connection) readBytes(n int64) {
+	cn.stats.readBytes(n)
+	if cn.t != nil {
+		cn.t.stats.readBytes(n)
+	}
+}
+
+// Returns whether the connection is currently useful to us. We're seeding and
+// they want data, we don't have metainfo and they can provide it, etc.
+func (c *connection) useful() bool {
+	t := c.t
+	if c.closed.IsSet() {
+		return false
+	}
+	if !t.haveInfo() {
+		return c.supportsExtension("ut_metadata")
+	}
+	if t.seeding() {
+		return c.PeerInterested
+	}
+	return t.connHasWantedPieces(c)
+}
+
+func (c *connection) lastHelpful() (ret time.Time) {
+	ret = c.lastUsefulChunkReceived
+	if c.t.seeding() && c.lastChunkSent.After(ret) {
+		ret = c.lastChunkSent
+	}
+	return
+}
+
+// Processes incoming bittorrent messages. The client lock is held upon entry
+// and exit. Returning will end the connection.
+func (c *connection) mainReadLoop() error {
+	t := c.t
+	cl := t.cl
+	pool := &sync.Pool{
+		New: func() interface{} {
+			return make([]byte, t.chunkSize)
+		},
+	}
+
+	decoder := pp.Decoder{
+		R:         bufio.NewReader(c.rw),
+		MaxLength: 256 * 1024,
+		Pool:      pool,
+	}
+	for {
+		cl.mu.Unlock()
+		var msg pp.Message
+		err := decoder.Decode(&msg)
+		cl.mu.Lock()
+		if cl.closed.IsSet() || c.closed.IsSet() || err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		c.readMsg(&msg)
+		c.lastMessageReceived = time.Now()
+		if msg.Keepalive {
+			receivedKeepalives.Add(1)
+			continue
+		}
+		receivedMessageTypes.Add(strconv.FormatInt(int64(msg.Type), 10), 1)
+		switch msg.Type {
+		case pp.Choke:
+			c.PeerChoked = true
+			c.Requests = nil
+			// We can then reset our interest.
+			c.updateRequests()
+		case pp.Reject:
+			cl.connDeleteRequest(t, c, newRequest(msg.Index, msg.Begin, msg.Length))
+			c.updateRequests()
+		case pp.Unchoke:
+			c.PeerChoked = false
+			cl.peerUnchoked(t, c)
+		case pp.Interested:
+			c.PeerInterested = true
+			cl.upload(t, c)
+		case pp.NotInterested:
+			c.PeerInterested = false
+			c.Choke()
+		case pp.Have:
+			err = c.peerSentHave(int(msg.Index))
+		case pp.Request:
+			if c.Choked {
+				break
+			}
+			if !c.PeerInterested {
+				err = errors.New("peer sent request but isn't interested")
+				break
+			}
+			if !t.havePiece(msg.Index.Int()) {
+				// This isn't necessarily them screwing up. We can drop pieces
+				// from our storage, and can't communicate this to peers
+				// except by reconnecting.
+				requestsReceivedForMissingPieces.Add(1)
+				err = errors.New("peer requested piece we don't have")
+				break
+			}
+			if c.PeerRequests == nil {
+				c.PeerRequests = make(map[request]struct{}, maxRequests)
+			}
+			c.PeerRequests[newRequest(msg.Index, msg.Begin, msg.Length)] = struct{}{}
+			cl.upload(t, c)
+		case pp.Cancel:
+			req := newRequest(msg.Index, msg.Begin, msg.Length)
+			if !c.PeerCancel(req) {
+				unexpectedCancels.Add(1)
+			}
+		case pp.Bitfield:
+			err = c.peerSentBitfield(msg.Bitfield)
+		case pp.HaveAll:
+			err = c.peerSentHaveAll()
+		case pp.HaveNone:
+			err = c.peerSentHaveNone()
+		case pp.Piece:
+			cl.downloadedChunk(t, c, &msg)
+			if len(msg.Piece) == int(t.chunkSize) {
+				pool.Put(msg.Piece)
+			}
+		case pp.Extended:
+			switch msg.ExtendedID {
+			case pp.HandshakeExtendedID:
+				// TODO: Create a bencode struct for this.
+				var d map[string]interface{}
+				err = bencode.Unmarshal(msg.ExtendedPayload, &d)
+				if err != nil {
+					err = fmt.Errorf("error decoding extended message payload: %s", err)
+					break
+				}
+				// log.Printf("got handshake from %q: %#v", c.Socket.RemoteAddr().String(), d)
+				if reqq, ok := d["reqq"]; ok {
+					if i, ok := reqq.(int64); ok {
+						c.PeerMaxRequests = int(i)
+					}
+				}
+				if v, ok := d["v"]; ok {
+					c.PeerClientName = v.(string)
+				}
+				m, ok := d["m"]
+				if !ok {
+					err = errors.New("handshake missing m item")
+					break
+				}
+				mTyped, ok := m.(map[string]interface{})
+				if !ok {
+					err = errors.New("handshake m value is not dict")
+					break
+				}
+				if c.PeerExtensionIDs == nil {
+					c.PeerExtensionIDs = make(map[string]byte, len(mTyped))
+				}
+				for name, v := range mTyped {
+					id, ok := v.(int64)
+					if !ok {
+						log.Printf("bad handshake m item extension ID type: %T", v)
+						continue
+					}
+					if id == 0 {
+						delete(c.PeerExtensionIDs, name)
+					} else {
+						if c.PeerExtensionIDs[name] == 0 {
+							supportedExtensionMessages.Add(name, 1)
+						}
+						c.PeerExtensionIDs[name] = byte(id)
+					}
+				}
+				metadata_sizeUntyped, ok := d["metadata_size"]
+				if ok {
+					metadata_size, ok := metadata_sizeUntyped.(int64)
+					if !ok {
+						log.Printf("bad metadata_size type: %T", metadata_sizeUntyped)
+					} else {
+						err = t.setMetadataSize(metadata_size)
+						if err != nil {
+							err = fmt.Errorf("error setting metadata size to %d", metadata_size)
+							break
+						}
+					}
+				}
+				if _, ok := c.PeerExtensionIDs["ut_metadata"]; ok {
+					c.requestPendingMetadata()
+				}
+			case metadataExtendedId:
+				err = cl.gotMetadataExtensionMsg(msg.ExtendedPayload, t, c)
+				if err != nil {
+					err = fmt.Errorf("error handling metadata extension message: %s", err)
+				}
+			case pexExtendedId:
+				if cl.config.DisablePEX {
+					break
+				}
+				var pexMsg peerExchangeMessage
+				err = bencode.Unmarshal(msg.ExtendedPayload, &pexMsg)
+				if err != nil {
+					err = fmt.Errorf("error unmarshalling PEX message: %s", err)
+					break
+				}
+				go func() {
+					cl.mu.Lock()
+					t.addPeers(func() (ret []Peer) {
+						for i, cp := range pexMsg.Added {
+							p := Peer{
+								IP:     make([]byte, 4),
+								Port:   cp.Port,
+								Source: peerSourcePEX,
+							}
+							if i < len(pexMsg.AddedFlags) && pexMsg.AddedFlags[i]&0x01 != 0 {
+								p.SupportsEncryption = true
+							}
+							missinggo.CopyExact(p.IP, cp.IP[:])
+							ret = append(ret, p)
+						}
+						return
+					}())
+					cl.mu.Unlock()
+				}()
+			default:
+				err = fmt.Errorf("unexpected extended message ID: %v", msg.ExtendedID)
+			}
+			if err != nil {
+				// That client uses its own extension IDs for outgoing message
+				// types, which is incorrect.
+				if bytes.HasPrefix(c.PeerID[:], []byte("-SD0100-")) ||
+					strings.HasPrefix(string(c.PeerID[:]), "-XL0012-") {
+					return nil
+				}
+			}
+		case pp.Port:
+			if cl.dHT == nil {
+				break
+			}
+			pingAddr, err := net.ResolveUDPAddr("", c.remoteAddr().String())
+			if err != nil {
+				panic(err)
+			}
+			if msg.Port != 0 {
+				pingAddr.Port = int(msg.Port)
+			}
+			cl.dHT.Ping(pingAddr)
+		default:
+			err = fmt.Errorf("received unknown message type: %#v", msg.Type)
+		}
+		if err != nil {
+			return err
+		}
+	}
 }

@@ -3,6 +3,7 @@ package torrent
 import (
 	"errors"
 	"io"
+	"log"
 	"os"
 	"sync"
 
@@ -20,7 +21,7 @@ type Reader struct {
 
 	// Required when modifying pos and readahead, or reading them without
 	// opMu.
-	mu        sync.Mutex
+	mu        sync.Locker
 	pos       int64
 	readahead int64
 }
@@ -45,7 +46,7 @@ func (r *Reader) SetReadahead(readahead int64) {
 }
 
 func (r *Reader) readable(off int64) (ret bool) {
-	if r.torrentClosed() {
+	if r.t.closed.IsSet() {
 		return true
 	}
 	req, ok := r.t.offsetRequest(off)
@@ -127,6 +128,7 @@ func (r *Reader) ReadContext(b []byte, ctx context.Context) (n int, err error) {
 		n += n1
 		r.mu.Lock()
 		r.pos += int64(n1)
+		r.posChanged()
 		r.mu.Unlock()
 	}
 	if r.pos >= r.t.length {
@@ -135,11 +137,6 @@ func (r *Reader) ReadContext(b []byte, ctx context.Context) (n int, err error) {
 		err = io.ErrUnexpectedEOF
 	}
 	return
-}
-
-// Safe to call with or without client lock.
-func (r *Reader) torrentClosed() bool {
-	return r.t.isClosed()
 }
 
 // Wait until some data should be available to read. Tickles the client if it
@@ -162,7 +159,7 @@ func (r *Reader) readOnceAt(b []byte, pos int64, ctxErr *error) (n int, err erro
 	for {
 		avail := r.waitAvailable(pos, int64(len(b)), ctxErr)
 		if avail == 0 {
-			if r.torrentClosed() {
+			if r.t.closed.IsSet() {
 				err = errors.New("torrent closed")
 				return
 			}
@@ -174,14 +171,14 @@ func (r *Reader) readOnceAt(b []byte, pos int64, ctxErr *error) (n int, err erro
 		b1 := b[:avail]
 		pi := int(pos / r.t.Info().PieceLength)
 		ip := r.t.Info().Piece(pi)
-		po := pos % ip.Length()
+		po := pos % r.t.Info().PieceLength
 		missinggo.LimitLen(&b1, ip.Length()-po)
 		n, err = r.t.readAt(b1, pos)
 		if n != 0 {
 			err = nil
 			return
 		}
-		// log.Printf("%s: error reading from torrent storage pos=%d: %s", r.t, pos, err)
+		log.Printf("error reading torrent %q piece %d offset %d, %d bytes: %s", r.t, pi, po, len(b1), err)
 		r.t.cl.mu.Lock()
 		r.t.updateAllPieceCompletions()
 		r.t.updatePiecePriorities()
@@ -196,8 +193,6 @@ func (r *Reader) Close() error {
 }
 
 func (r *Reader) posChanged() {
-	r.t.cl.mu.Lock()
-	defer r.t.cl.mu.Unlock()
 	r.t.readersChanged()
 }
 
@@ -206,6 +201,7 @@ func (r *Reader) Seek(off int64, whence int) (ret int64, err error) {
 	defer r.opMu.Unlock()
 
 	r.mu.Lock()
+	defer r.mu.Unlock()
 	switch whence {
 	case os.SEEK_SET:
 		r.pos = off
@@ -217,7 +213,6 @@ func (r *Reader) Seek(off int64, whence int) (ret int64, err error) {
 		err = errors.New("bad whence")
 	}
 	ret = r.pos
-	r.mu.Unlock()
 
 	r.posChanged()
 	return

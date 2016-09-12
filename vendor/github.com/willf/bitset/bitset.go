@@ -46,6 +46,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 )
 
 // the wordSize of a bit set
@@ -90,8 +91,22 @@ func wordsNeeded(i uint) int {
 }
 
 // New creates a new BitSet with a hint that length bits will be required
-func New(length uint) *BitSet {
-	return &BitSet{length, make([]uint64, wordsNeeded(length))}
+func New(length uint) (bset *BitSet) {
+	defer func() {
+		if r := recover(); r != nil {
+			bset = &BitSet{
+				0,
+				make([]uint64, 0),
+			}
+		}
+	}()
+
+	bset = &BitSet{
+		length,
+		make([]uint64, wordsNeeded(length)),
+	}
+
+	return bset
 }
 
 // Cap returns the total possible capicity, or number of bits
@@ -158,6 +173,31 @@ func (b *BitSet) Flip(i uint) *BitSet {
 	}
 	b.set[i>>log2WordSize] ^= 1 << (i & (wordSize - 1))
 	return b
+}
+
+// String creates a string representation of the Bitmap
+func (b *BitSet) String() string {
+	// follows code from https://github.com/RoaringBitmap/roaring
+	var buffer bytes.Buffer
+	start := []byte("{")
+	buffer.Write(start)
+	counter := 0
+	i, e := b.NextSet(0)
+	for e {
+		counter = counter + 1
+		// to avoid exhausting the memory
+		if counter > 0x40000 {
+			buffer.WriteString("...")
+			break
+		}
+		buffer.WriteString(strconv.FormatInt(int64(i), 10))
+		i, e = b.NextSet(i + 1)
+		if e {
+			buffer.WriteString(",")
+		}
+	}
+	buffer.WriteString("}")
+	return buffer.String()
 }
 
 // NextSet returns the next bit set from the specified index,

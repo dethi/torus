@@ -1,7 +1,7 @@
 package bencode
 
 import (
-	"bufio"
+	"io"
 	"reflect"
 	"runtime"
 	"sort"
@@ -11,16 +11,20 @@ import (
 	"github.com/anacrolix/missinggo"
 )
 
-func is_empty_value(v reflect.Value) bool {
+func isEmptyValue(v reflect.Value) bool {
 	return missinggo.IsEmptyValue(v)
 }
 
-type encoder struct {
-	*bufio.Writer
+type Encoder struct {
+	w interface {
+		Flush() error
+		io.Writer
+		WriteString(string) (int, error)
+	}
 	scratch [64]byte
 }
 
-func (e *encoder) encode(v interface{}) (err error) {
+func (e *Encoder) Encode(v interface{}) (err error) {
 	if v == nil {
 		return
 	}
@@ -36,8 +40,8 @@ func (e *encoder) encode(v interface{}) (err error) {
 			}
 		}
 	}()
-	e.reflect_value(reflect.ValueOf(v))
-	return e.Flush()
+	e.reflectValue(reflect.ValueOf(v))
+	return e.w.Flush()
 }
 
 type string_values []reflect.Value
@@ -47,37 +51,37 @@ func (sv string_values) Swap(i, j int)      { sv[i], sv[j] = sv[j], sv[i] }
 func (sv string_values) Less(i, j int) bool { return sv.get(i) < sv.get(j) }
 func (sv string_values) get(i int) string   { return sv[i].String() }
 
-func (e *encoder) write(s []byte) {
-	_, err := e.Write(s)
+func (e *Encoder) write(s []byte) {
+	_, err := e.w.Write(s)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (e *encoder) write_string(s string) {
-	_, err := e.WriteString(s)
+func (e *Encoder) writeString(s string) {
+	_, err := e.w.WriteString(s)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (e *encoder) reflect_string(s string) {
+func (e *Encoder) reflectString(s string) {
 	b := strconv.AppendInt(e.scratch[:0], int64(len(s)), 10)
 	e.write(b)
-	e.write_string(":")
-	e.write_string(s)
+	e.writeString(":")
+	e.writeString(s)
 }
 
-func (e *encoder) reflect_byte_slice(s []byte) {
+func (e *Encoder) reflectByteSlice(s []byte) {
 	b := strconv.AppendInt(e.scratch[:0], int64(len(s)), 10)
 	e.write(b)
-	e.write_string(":")
+	e.writeString(":")
 	e.write(s)
 }
 
 // returns true if the value implements Marshaler interface and marshaling was
 // done successfully
-func (e *encoder) reflect_marshaler(v reflect.Value) bool {
+func (e *Encoder) reflectMarshaler(v reflect.Value) bool {
 	m, ok := v.Interface().(Marshaler)
 	if !ok {
 		// T doesn't work, try *T
@@ -100,117 +104,117 @@ func (e *encoder) reflect_marshaler(v reflect.Value) bool {
 	return false
 }
 
-func (e *encoder) reflect_value(v reflect.Value) {
+func (e *Encoder) reflectValue(v reflect.Value) {
 
-	if e.reflect_marshaler(v) {
+	if e.reflectMarshaler(v) {
 		return
 	}
 
 	switch v.Kind() {
 	case reflect.Bool:
 		if v.Bool() {
-			e.write_string("i1e")
+			e.writeString("i1e")
 		} else {
-			e.write_string("i0e")
+			e.writeString("i0e")
 		}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		b := strconv.AppendInt(e.scratch[:0], v.Int(), 10)
-		e.write_string("i")
+		e.writeString("i")
 		e.write(b)
-		e.write_string("e")
+		e.writeString("e")
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		b := strconv.AppendUint(e.scratch[:0], v.Uint(), 10)
-		e.write_string("i")
+		e.writeString("i")
 		e.write(b)
-		e.write_string("e")
+		e.writeString("e")
 	case reflect.String:
-		e.reflect_string(v.String())
+		e.reflectString(v.String())
 	case reflect.Struct:
-		e.write_string("d")
-		for _, ef := range encode_fields(v.Type()) {
+		e.writeString("d")
+		for _, ef := range encodeFields(v.Type()) {
 			field_value := v.Field(ef.i)
-			if ef.omit_empty && is_empty_value(field_value) {
+			if ef.omit_empty && isEmptyValue(field_value) {
 				continue
 			}
-			e.reflect_string(ef.tag)
-			e.reflect_value(field_value)
+			e.reflectString(ef.tag)
+			e.reflectValue(field_value)
 		}
-		e.write_string("e")
+		e.writeString("e")
 	case reflect.Map:
 		if v.Type().Key().Kind() != reflect.String {
 			panic(&MarshalTypeError{v.Type()})
 		}
 		if v.IsNil() {
-			e.write_string("de")
+			e.writeString("de")
 			break
 		}
-		e.write_string("d")
+		e.writeString("d")
 		sv := string_values(v.MapKeys())
 		sort.Sort(sv)
 		for _, key := range sv {
-			e.reflect_string(key.String())
-			e.reflect_value(v.MapIndex(key))
+			e.reflectString(key.String())
+			e.reflectValue(v.MapIndex(key))
 		}
-		e.write_string("e")
+		e.writeString("e")
 	case reflect.Slice:
 		if v.IsNil() {
-			e.write_string("le")
+			e.writeString("le")
 			break
 		}
 		if v.Type().Elem().Kind() == reflect.Uint8 {
 			s := v.Bytes()
-			e.reflect_byte_slice(s)
+			e.reflectByteSlice(s)
 			break
 		}
 		fallthrough
 	case reflect.Array:
-		e.write_string("l")
+		e.writeString("l")
 		for i, n := 0, v.Len(); i < n; i++ {
-			e.reflect_value(v.Index(i))
+			e.reflectValue(v.Index(i))
 		}
-		e.write_string("e")
+		e.writeString("e")
 	case reflect.Interface:
-		e.reflect_value(v.Elem())
+		e.reflectValue(v.Elem())
 	case reflect.Ptr:
 		if v.IsNil() {
 			v = reflect.Zero(v.Type().Elem())
 		} else {
 			v = v.Elem()
 		}
-		e.reflect_value(v)
+		e.reflectValue(v)
 	default:
 		panic(&MarshalTypeError{v.Type()})
 	}
 }
 
-type encode_field struct {
+type encodeField struct {
 	i          int
 	tag        string
 	omit_empty bool
 }
 
-type encode_fields_sort_type []encode_field
+type encodeFieldsSortType []encodeField
 
-func (ef encode_fields_sort_type) Len() int           { return len(ef) }
-func (ef encode_fields_sort_type) Swap(i, j int)      { ef[i], ef[j] = ef[j], ef[i] }
-func (ef encode_fields_sort_type) Less(i, j int) bool { return ef[i].tag < ef[j].tag }
+func (ef encodeFieldsSortType) Len() int           { return len(ef) }
+func (ef encodeFieldsSortType) Swap(i, j int)      { ef[i], ef[j] = ef[j], ef[i] }
+func (ef encodeFieldsSortType) Less(i, j int) bool { return ef[i].tag < ef[j].tag }
 
 var (
-	type_cache_lock     sync.RWMutex
-	encode_fields_cache = make(map[reflect.Type][]encode_field)
+	typeCacheLock     sync.RWMutex
+	encodeFieldsCache = make(map[reflect.Type][]encodeField)
 )
 
-func encode_fields(t reflect.Type) []encode_field {
-	type_cache_lock.RLock()
-	fs, ok := encode_fields_cache[t]
-	type_cache_lock.RUnlock()
+func encodeFields(t reflect.Type) []encodeField {
+	typeCacheLock.RLock()
+	fs, ok := encodeFieldsCache[t]
+	typeCacheLock.RUnlock()
 	if ok {
 		return fs
 	}
 
-	type_cache_lock.Lock()
-	defer type_cache_lock.Unlock()
-	fs, ok = encode_fields_cache[t]
+	typeCacheLock.Lock()
+	defer typeCacheLock.Unlock()
+	fs, ok = encodeFieldsCache[t]
 	if ok {
 		return fs
 	}
@@ -223,7 +227,7 @@ func encode_fields(t reflect.Type) []encode_field {
 		if f.Anonymous {
 			continue
 		}
-		var ef encode_field
+		var ef encodeField
 		ef.i = i
 		ef.tag = f.Name
 
@@ -232,7 +236,7 @@ func encode_fields(t reflect.Type) []encode_field {
 			if tv == "-" {
 				continue
 			}
-			name, opts := parse_tag(tv)
+			name, opts := parseTag(tv)
 			if name != "" {
 				ef.tag = name
 			}
@@ -240,8 +244,8 @@ func encode_fields(t reflect.Type) []encode_field {
 		}
 		fs = append(fs, ef)
 	}
-	fss := encode_fields_sort_type(fs)
+	fss := encodeFieldsSortType(fs)
 	sort.Sort(fss)
-	encode_fields_cache[t] = fs
+	encodeFieldsCache[t] = fs
 	return fs
 }

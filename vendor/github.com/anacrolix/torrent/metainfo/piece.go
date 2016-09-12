@@ -3,7 +3,7 @@ package metainfo
 import "github.com/anacrolix/missinggo"
 
 type Piece struct {
-	Info *InfoEx
+	Info *Info
 	i    int
 }
 
@@ -21,4 +21,8 @@ func (p Piece) Offset() int64 {
 func (p Piece) Hash() (ret Hash) {
 	missinggo.CopyExact(&ret, p.Info.Pieces[p.i*20:(p.i+1)*20])
 	return
+}
+
+func (p Piece) Index() int {
+	return p.i
 }

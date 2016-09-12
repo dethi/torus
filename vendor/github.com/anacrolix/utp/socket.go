@@ -6,6 +6,8 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/anacrolix/missinggo"
@@ -34,7 +36,10 @@ type Socket struct {
 	backlogNotEmpty missinggo.Event
 	backlog         map[syn]struct{}
 
-	closed missinggo.Event
+	closed    missinggo.Event
+	destroyed missinggo.Event
+
+	wgReadWrite sync.WaitGroup
 
 	unusedReads chan read
 	connDeadlines
@@ -51,8 +56,8 @@ func listenPacket(network, addr string) (pc net.PacketConn, err error) {
 	return net.ListenPacket(network, addr)
 }
 
-// addr is used to create a listening UDP conn which becomes the underlying
-// net.PacketConn for the Socket.
+// NewSocket creates a net.PacketConn with the given network and address, and
+// returns a Socket dispatching on it.
 func NewSocket(network, addr string) (s *Socket, err error) {
 	if network == "" {
 		network = "udp"
@@ -65,20 +70,26 @@ func NewSocket(network, addr string) (s *Socket, err error) {
 }
 
 // Create a Socket, using the provided net.PacketConn. If you want to retain
-// use of the net.PacketConn after the Socket closes it, override your
-// net.PacketConn's Close method.
+// use of the net.PacketConn after the Socket closes it, override the
+// net.PacketConn's Close method, or use NetSocketFromPacketConnNoClose.
 func NewSocketFromPacketConn(pc net.PacketConn) (s *Socket, err error) {
 	s = &Socket{
-		backlog: make(map[syn]struct{}, backlog),
-		pc:      pc,
-
+		backlog:     make(map[syn]struct{}, backlog),
+		pc:          pc,
 		unusedReads: make(chan read, 100),
+		wgReadWrite: sync.WaitGroup{},
 	}
 	mu.Lock()
 	sockets[s] = struct{}{}
 	mu.Unlock()
 	go s.reader()
 	return
+}
+
+// Create a Socket using the provided PacketConn, that doesn't close the
+// PacketConn when the Socket is closed.
+func NewSocketFromPacketConnNoClose(pc net.PacketConn) (s *Socket, err error) {
+	return NewSocketFromPacketConn(packetConnNopCloser{pc})
 }
 
 func (s *Socket) unusedRead(read read) {
@@ -111,6 +122,8 @@ func (s *Socket) pushBacklog(syn syn) {
 	if _, ok := s.backlog[syn]; ok {
 		return
 	}
+	// Pop a pseudo-random syn to make room. TODO: Use missinggo/orderedmap,
+	// coz that's what is wanted here.
 	for k := range s.backlog {
 		if len(s.backlog) < backlog {
 			break
@@ -130,17 +143,33 @@ func (s *Socket) reader() {
 	defer s.destroy()
 	var b [maxRecvSize]byte
 	for {
+		s.wgReadWrite.Add(1)
 		mu.Unlock()
 		n, addr, err := s.pc.ReadFrom(b[:])
+		s.wgReadWrite.Done()
 		mu.Lock()
-		if err != nil {
-			s.ReadErr = err
+		if s.destroyed.IsSet() {
 			return
+		}
+		if err != nil {
+			if strings.Contains(err.Error(), "use of closed network connection") || err == io.EOF {
+				s.ReadErr = err
+				return
+			}
+			log.Printf("error reading Socket PacketConn: %s", err)
+			continue
 		}
 		s.dispatch(read{
 			append([]byte(nil), b[:n]...),
 			addr,
 		})
+	}
+}
+
+func receivedUTPPacketSize(n int) {
+	if n > largestReceivedUTPPacket {
+		largestReceivedUTPPacket = n
+		largestReceivedUTPPacketExpvar.Set(int64(n))
 	}
 }
 
@@ -184,6 +213,7 @@ func (s *Socket) dispatch(read read) {
 				panic("bad assumption")
 			}
 		}
+		receivedUTPPacketSize(len(b))
 		c.receivePacket(h, b[hEnd:])
 		return
 	}
@@ -271,15 +301,8 @@ func (s *Socket) newConn(addr net.Addr) (c *Conn) {
 		remoteSocketAddr: addr,
 		created:          time.Now(),
 	}
-	c.readCond.L = &mu
 	c.sendPendingSendSendStateTimer = missinggo.StoppedFuncTimer(c.sendPendingSendStateTimerCallback)
 	c.packetReadTimeoutTimer = time.AfterFunc(packetReadTimeout, c.receivePacketTimeoutCallback)
-	missinggo.AddCondToFlags(
-		&c.readCond,
-		&c.destroyed,
-		&c.gotFin,
-		&c.closed,
-		&c.connDeadlines.read.passed)
 	return
 }
 
@@ -346,6 +369,9 @@ func (s *Socket) DialTimeout(addr string, timeout time.Duration) (nc net.Conn, e
 		mu.Unlock()
 		return
 	}
+	mu.Lock()
+	c.updateCanWrite()
+	mu.Unlock()
 	nc = pproffd.WrapNetConn(c)
 	return
 }
@@ -384,71 +410,85 @@ func (s *Socket) backlogChanged() {
 	}
 }
 
-func (s *Socket) nextSyn() (syn syn, ok bool) {
+func (s *Socket) nextSyn() (syn syn, err error) {
 	for {
-		mu.Lock()
-		closed := s.closed.C()
-		backlogNotEmpty := s.backlogNotEmpty.C()
-		mu.Unlock()
-		select {
-		case <-closed:
+		missinggo.WaitEvents(&mu, &s.closed, &s.backlogNotEmpty, &s.destroyed)
+		if s.closed.IsSet() {
+			err = errClosed
 			return
-		case <-backlogNotEmpty:
-			mu.Lock()
-			for k := range s.backlog {
-				syn = k
-				delete(s.backlog, k)
-				ok = true
-				break
-			}
+		}
+		if s.destroyed.IsSet() {
+			err = s.ReadErr
+			return
+		}
+		for k := range s.backlog {
+			syn = k
+			delete(s.backlog, k)
 			s.backlogChanged()
-			mu.Unlock()
-			if ok {
-				return
-			}
+			return
 		}
 	}
 }
 
-// Accept and return a new uTP connection.
-func (s *Socket) Accept() (c net.Conn, err error) {
-	for {
-		syn, ok := s.nextSyn()
-		if !ok {
-			err = errClosed
-			return
+// ACK a SYN, and return a new Conn for it. ok is false if the SYN is bad, and
+// the Conn invalid.
+func (s *Socket) ackSyn(syn syn) (c *Conn, ok bool) {
+	c = s.newConn(s.strNetAddr(syn.addr))
+	c.send_id = syn.conn_id
+	c.recv_id = c.send_id + 1
+	c.seq_nr = uint16(rand.Int())
+	c.lastAck = c.seq_nr - 1
+	c.ack_nr = syn.seq_nr
+	c.sentSyn = true
+	c.synAcked = true
+	c.updateCanWrite()
+	if !s.registerConn(c.recv_id, resolvedAddrStr(syn.addr), c) {
+		// SYN that triggered this accept duplicates existing connection.
+		// Ack again in case the SYN was a resend.
+		c = s.conns[connKey{resolvedAddrStr(syn.addr), c.recv_id}]
+		if c.send_id != syn.conn_id {
+			panic(":|")
 		}
-		mu.Lock()
-		_c := s.newConn(s.strNetAddr(syn.addr))
-		_c.send_id = syn.conn_id
-		_c.recv_id = _c.send_id + 1
-		_c.seq_nr = uint16(rand.Int())
-		_c.lastAck = _c.seq_nr - 1
-		_c.ack_nr = syn.seq_nr
-		_c.sentSyn = true
-		_c.synAcked = true
-		if !s.registerConn(_c.recv_id, resolvedAddrStr(syn.addr), _c) {
-			// SYN that triggered this accept duplicates existing connection.
-			// Ack again in case the SYN was a resend.
-			_c = s.conns[connKey{resolvedAddrStr(syn.addr), _c.recv_id}]
-			if _c.send_id != syn.conn_id {
-				panic(":|")
-			}
-			_c.sendState()
-			mu.Unlock()
-			continue
-		}
-		_c.sendState()
-		// _c.seq_nr++
-		c = _c
-		mu.Unlock()
+		c.sendState()
 		return
+	}
+	c.sendState()
+	ok = true
+	return
+}
+
+// Accept and return a new uTP connection.
+func (s *Socket) Accept() (net.Conn, error) {
+	mu.Lock()
+	defer mu.Unlock()
+	for {
+		syn, err := s.nextSyn()
+		if err != nil {
+			return nil, err
+		}
+		c, ok := s.ackSyn(syn)
+		if ok {
+			c.updateCanWrite()
+			return c, nil
+		}
 	}
 }
 
 // The address we're listening on for new uTP connections.
 func (s *Socket) Addr() net.Addr {
 	return s.pc.LocalAddr()
+}
+
+func (s *Socket) CloseNow() error {
+	mu.Lock()
+	defer mu.Unlock()
+	s.closed.Set()
+	for _, c := range s.conns {
+		c.closeNow()
+	}
+	s.destroy()
+	s.wgReadWrite.Wait()
+	return nil
 }
 
 func (s *Socket) Close() error {
@@ -471,6 +511,7 @@ func (s *Socket) lazyDestroy() {
 
 func (s *Socket) destroy() {
 	delete(sockets, s)
+	s.destroyed.Set()
 	s.pc.Close()
 	for _, c := range s.conns {
 		c.destroy(errors.New("Socket destroyed"))
@@ -482,15 +523,31 @@ func (s *Socket) LocalAddr() net.Addr {
 }
 
 func (s *Socket) ReadFrom(p []byte) (n int, addr net.Addr, err error) {
-	read, ok := <-s.unusedReads
-	if !ok {
-		err = io.EOF
+	select {
+	case read, ok := <-s.unusedReads:
+		if !ok {
+			err = io.EOF
+			return
+		}
+		n = copy(p, read.data)
+		addr = read.from
+		return
+	case <-s.connDeadlines.read.passed.LockedChan(&mu):
+		err = errTimeout
+		return
 	}
-	n = copy(p, read.data)
-	addr = read.from
-	return
 }
 
-func (s *Socket) WriteTo(b []byte, addr net.Addr) (int, error) {
+func (s *Socket) WriteTo(b []byte, addr net.Addr) (n int, err error) {
+	mu.Lock()
+	if s.connDeadlines.write.passed.IsSet() {
+		err = errTimeout
+	}
+	s.wgReadWrite.Add(1)
+	defer s.wgReadWrite.Done()
+	mu.Unlock()
+	if err != nil {
+		return
+	}
 	return s.pc.WriteTo(b, addr)
 }

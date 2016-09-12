@@ -13,7 +13,7 @@ func (h Hash) Bytes() []byte {
 	return h[:]
 }
 
-func (h *Hash) AsString() string {
+func (h Hash) AsString() string {
 	return string(h[:])
 }
 
@@ -33,6 +33,11 @@ func (h *Hash) FromHexString(s string) (err error) {
 	if n != 20 {
 		panic(n)
 	}
+	return
+}
+
+func NewHashFromHex(s string) (h Hash) {
+	h.FromHexString(s)
 	return
 }
 

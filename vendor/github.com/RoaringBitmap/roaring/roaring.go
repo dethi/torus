@@ -6,6 +6,7 @@
 package roaring
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/base64"
 	"fmt"
@@ -47,8 +48,40 @@ func (rb *Bitmap) ReadFrom(stream io.Reader) (int64, error) {
 	return rb.highlowcontainer.readFrom(stream)
 }
 
-// NewBitmap creates a new empty Bitmap
+// MarshalBinary implements the encoding.BinaryMarshaler interface for the bitmap
+func (rb *Bitmap) MarshalBinary() ([]byte, error) {
+	var buf bytes.Buffer
+	writer := bufio.NewWriter(&buf)
+	_, err := rb.WriteTo(writer)
+	if err != nil {
+		return nil, err
+	}
+	err = writer.Flush()
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface for the bitmap
+func (rb *Bitmap) UnmarshalBinary(data []byte) error {
+	var buf bytes.Buffer
+	_, err := buf.Write(data)
+	if err != nil {
+		return err
+	}
+	reader := bufio.NewReader(&buf)
+	_, err = rb.ReadFrom(reader)
+	return err
+}
+
+// NewBitmap creates a new empty Bitmap (see also New)
 func NewBitmap() *Bitmap {
+	return &Bitmap{*newRoaringArray()}
+}
+
+// New creates a new empty Bitmap (same as NewBitmap)
+func New() *Bitmap {
 	return &Bitmap{*newRoaringArray()}
 }
 
@@ -163,17 +196,19 @@ func (rb *Bitmap) String() string {
 	buffer.Write(start)
 	i := rb.Iterator()
 	counter := 0
+	if i.HasNext() {
+		counter = counter + 1
+		buffer.WriteString(strconv.FormatInt(int64(i.Next()), 10))
+	}
 	for i.HasNext() {
+		buffer.WriteString(",")
 		counter = counter + 1
 		// to avoid exhausting the memory
 		if counter > 0x40000 {
 			buffer.WriteString("...")
 			break
 		}
-		buffer.WriteString(strconv.Itoa(int(i.Next())))
-		if i.HasNext() { // todo: optimize
-			buffer.WriteString(",")
-		}
+		buffer.WriteString(strconv.FormatInt(int64(i.Next()), 10))
 	}
 	buffer.WriteString("}")
 	return buffer.String()
@@ -228,20 +263,22 @@ func (rb *Bitmap) Add(x uint32) {
 	}
 }
 
-// Add the integer x to the bitmap
-func (rb *Bitmap) VerboseAdd(x uint32) {
+// add the integer x to the bitmap, return the container and its index
+func (rb *Bitmap) addwithptr(x uint32) (int, container) {
 	hb := highbits(x)
 	ra := &rb.highlowcontainer
 	i := ra.getIndex(hb)
+	var c container
 	if i >= 0 {
-		var c container
 		c = ra.getWritableContainerAtIndex(i)
 		c = c.add(lowbits(x))
 		rb.highlowcontainer.setContainerAtIndex(i, c)
-	} else {
-		newac := newArrayContainer()
-		rb.highlowcontainer.insertNewKeyValueAt(-i-1, hb, newac.add(lowbits(x)))
+		return i, c
 	}
+	newac := newArrayContainer()
+	c = newac.add(lowbits(x))
+	rb.highlowcontainer.insertNewKeyValueAt(-i-1, hb, c)
+	return -i - 1, c
 }
 
 // CheckedAdd adds the integer x to the bitmap and return true  if it was added (false if the integer was already present)
@@ -840,12 +877,28 @@ main:
 	return answer
 }
 
-// BitmapOf generates a new bitmap filled with the specified integer
+// AddMany add all of the values in dat
+func (rb *Bitmap) AddMany(dat []uint32) {
+	if len(dat) == 0 {
+		return
+	}
+	prev := dat[0]
+	idx, c := rb.addwithptr(prev)
+	for _, i := range dat[1:] {
+		if highbits(prev) == highbits(i) {
+			c = c.add(lowbits(i))
+			rb.highlowcontainer.setContainerAtIndex(idx, c)
+		} else {
+			idx, c = rb.addwithptr(prev)
+		}
+		prev = i
+	}
+}
+
+// BitmapOf generates a new bitmap filled with the specified integers
 func BitmapOf(dat ...uint32) *Bitmap {
 	ans := NewBitmap()
-	for _, i := range dat {
-		ans.Add(i)
-	}
+  ans.AddMany(dat)
 	return ans
 }
 
@@ -1040,6 +1093,18 @@ func Flip(bm *Bitmap, rangeStart, rangeEnd uint64) *Bitmap {
 	answer.highlowcontainer.appendCopiesAfter(bm.highlowcontainer, hbLast)
 
 	return answer
+}
+
+// SetCopyOnWrite sets this bitmap to use copy-on-write so that copies are fast and memory conscious
+// if the parameter is true, otherwise we leave the default where hard copies are made
+// (copy-on-write requires extra care in a threaded context).
+func (rb *Bitmap) SetCopyOnWrite(val bool) {
+	rb.highlowcontainer.copyOnWrite = val
+}
+
+// GetCopyOnWrite gets this bitmap's copy-on-write property
+func (rb *Bitmap) GetCopyOnWrite() (val bool) {
+	return rb.highlowcontainer.copyOnWrite
 }
 
 // FlipInt calls Flip after casting the parameters (convenience method)

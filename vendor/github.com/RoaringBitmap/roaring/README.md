@@ -1,4 +1,4 @@
-roaring [![Build Status](https://travis-ci.org/RoaringBitmap/roaring.png)](https://travis-ci.org/RoaringBitmap/roaring)[![GoDoc](https://godoc.org/github.com/RoaringBitmap/roaring?status.svg)](https://godoc.org/github.com/RoaringBitmap/roaring) [![Go Report Card](https://goreportcard.com/badge/RoaringBitmap/roaring)](https://goreportcard.com/report/RoaringBitmap/roaring)
+roaring [![Build Status](https://travis-ci.org/RoaringBitmap/roaring.png)](https://travis-ci.org/RoaringBitmap/roaring) [![Coverage Status](https://coveralls.io/repos/github/RoaringBitmap/roaring/badge.svg?branch=master)](https://coveralls.io/github/RoaringBitmap/roaring?branch=master) [![GoDoc](https://godoc.org/github.com/RoaringBitmap/roaring?status.svg)](https://godoc.org/github.com/RoaringBitmap/roaring) [![Go Report Card](https://goreportcard.com/badge/RoaringBitmap/roaring)](https://goreportcard.com/report/github.com/RoaringBitmap/roaring)
 =============
 
 This is a go port of the Roaring bitmap data structure.
@@ -16,7 +16,8 @@ from a Java program and load them back in Go, and vice versa.
 
 This code is licensed under Apache License, Version 2.0 (ASL2.0).
 
-Contributors: Todd Gruben (@tgruben), Daniel Lemire (@lemire), Elliot Murphy (@statik), Bob Potter (@bpot), Tyson Maly (@tvmaly), Will Glynn (@willglynn), Brent Pedersen (@brentp)
+Copyright 2016 by the authors.
+
 
 ### References
 
@@ -126,11 +127,19 @@ bitmaps never use more than 2 bytes per integer. You can call
 
 Current documentation is available at http://godoc.org/github.com/RoaringBitmap/roaring
 
+### Thread-safety
+
+In general, it should generally be considered safe to access
+the same bitmaps using different threads as
+long as they are not being modified. However, if some of your
+bitmaps use copy-on-write, then more care is needed: pass
+to your threads a (shallow) copy of your bitmaps.
+
 ### Coverage
 
 We test our software. For a report on our test coverage, see
 
-https://gocover.io/github.com/RoaringBitmap/roaring
+https://coveralls.io/github/RoaringBitmap/roaring?branch=master
 
 ### Benchmark
 
@@ -147,7 +156,9 @@ to read bitmaps serialized from Java in Go, you might want to call ``removeRunCo
 prior to serializing your Java instances. This is a temporary limitation: we plan to
 add support for run containers to the Go library.
 
-### Alternative
+### Alternative in Go
+
+There is a Go version wrapping the C/C++ implementation https://github.com/RoaringBitmap/gocroaring
 
 For an alternative implementation in Go, see https://github.com/fzandona/goroar
 The two versions were written independently.

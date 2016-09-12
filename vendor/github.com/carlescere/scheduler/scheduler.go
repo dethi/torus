@@ -18,7 +18,6 @@ import (
 	"errors"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -28,30 +27,23 @@ type scheduled interface {
 
 // Job defines a running job and allows to stop a scheduled job or run it.
 type Job struct {
-	fn        func()
-	Quit      chan bool
-	SkipWait  chan bool
-	err       error
-	schedule  scheduled
-	isRunning bool
-	sync.RWMutex
+	fn       func()
+	Quit     chan bool
+	SkipWait chan bool
+	err      error
+	schedule scheduled
 }
 
 type recurrent struct {
-	units  int
+	units  time.Duration
 	period time.Duration
-	done   bool
 }
 
-func (r *recurrent) nextRun() (time.Duration, error) {
+func (r recurrent) nextRun() (time.Duration, error) {
 	if r.units == 0 || r.period == 0 {
 		return 0, errors.New("cannot set recurrent time with 0")
 	}
-	if !r.done {
-		r.done = true
-		return 0, nil
-	}
-	return time.Duration(r.units) * r.period, nil
+	return r.units * r.period, nil
 }
 
 type daily struct {
@@ -87,6 +79,10 @@ func (w weekly) nextRun() (time.Duration, error) {
 	year, month, day := now.Date()
 	numDays := w.day - now.Weekday()
 	if numDays == 0 {
+		date := time.Date(year, month, day, w.d.hour, w.d.min, w.d.sec, 0, time.Local)
+		if now.Before(date) {
+			return date.Sub(now), nil
+		}
 		numDays = 7
 	} else if numDays < 0 {
 		numDays += 7
@@ -95,35 +91,19 @@ func (w weekly) nextRun() (time.Duration, error) {
 	return date.Sub(now), nil
 }
 
-// Every defines when to run a job. For a recurrent jobs (n seconds/minutes/hours) you
-// should specify the unit and then call to the correspondent period method.
-func Every(times ...int) *Job {
+// Every defines when to run a job. For a recurrent jobs (n seconds/minutes/hours) you should // specify the unit and then call to the correspondent period method.
+func Every(times ...time.Duration) *Job {
 	switch len(times) {
 	case 0:
 		return &Job{}
 	case 1:
-		r := new(recurrent)
-		r.units = times[0]
-		return &Job{schedule: r}
+		return &Job{schedule: recurrent{units: times[0]}}
 	default:
 		// Yeah... I don't like it either. But go does not support default
 		// parameters nor method overloading. In an ideal world should
 		// return an error at compile time not at runtime. :/
 		return &Job{err: errors.New("too many arguments in Every")}
 	}
-}
-
-// NotImmediately allows recurrent jobs not to be executed immediatelly after
-// definition. If a job is declared hourly won't start executing until the first hour
-// passed.
-func (j *Job) NotImmediately() *Job {
-	rj, ok := j.schedule.(*recurrent)
-	if !ok {
-		j.err = errors.New("bad function chaining")
-		return j
-	}
-	rj.done = true
-	return j
 }
 
 // At lets you define a specific time when the job would be run. Does not work with
@@ -167,40 +147,24 @@ func (j *Job) Run(f func()) (*Job, error) {
 	j.SkipWait = make(chan bool, 1)
 	j.fn = f
 	// Check for possible errors in scheduling
-	next, err = j.schedule.nextRun()
+	_, err = j.schedule.nextRun()
 	if err != nil {
 		return nil, err
 	}
 	go func(j *Job) {
 		for {
+			next, _ = j.schedule.nextRun()
 			select {
 			case <-j.Quit:
 				return
 			case <-j.SkipWait:
-				go runJob(j)
+				go j.fn()
 			case <-time.After(next):
-				go runJob(j)
+				go j.fn()
 			}
-			next, _ = j.schedule.nextRun()
 		}
 	}(j)
 	return j, nil
-}
-
-func (j *Job) setRunning(running bool) {
-	j.Lock()
-	defer j.Unlock()
-
-	j.isRunning = running
-}
-
-func runJob(job *Job) {
-	if job.IsRunning() {
-		return
-	}
-	job.setRunning(true)
-	job.fn()
-	job.setRunning(false)
 }
 
 func parseTime(str string) (hour, min, sec int, err error) {
@@ -296,7 +260,7 @@ func (j *Job) timeOfDay(d time.Duration) *Job {
 	if j.err != nil {
 		return j
 	}
-	r := j.schedule.(*recurrent)
+	r := j.schedule.(recurrent)
 	r.period = d
 	j.schedule = r
 	return j
@@ -317,11 +281,4 @@ func (j *Job) Minutes() *Job {
 // Hours sets the job to run every n Hours where n was defined in the Every function.
 func (j *Job) Hours() *Job {
 	return j.timeOfDay(time.Hour)
-}
-
-// IsRunning returns if the job is currently running
-func (j *Job) IsRunning() bool {
-	j.RLock()
-	defer j.RUnlock()
-	return j.isRunning
 }
