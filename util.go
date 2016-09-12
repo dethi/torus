@@ -11,7 +11,7 @@ import (
 )
 
 func MustTemplate(name string) *template.Template {
-	t := template.New(name).Delims("[[", "]]")
+	t := template.New(name)
 	return template.Must(t.Parse(string(MustAsset(name))))
 }
 

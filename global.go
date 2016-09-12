@@ -22,7 +22,7 @@ var (
 	activeJobs = flag.Int("activeJobs", 3, "number of active torrents")
 
 	tBucket    = []byte("Torrents")
-	listTmpl   = MustTemplate("tmpl/list.html.tmpl")
+	listTmpl   = MustTemplate("tmpl/list.html")
 	regexUrl   = regexp.MustCompile(findUrl)
 	regexClean = regexp.MustCompile(cleanName)
 )
