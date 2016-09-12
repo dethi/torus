@@ -15,14 +15,8 @@ func listView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		AppId              string
-		SearchKey          string
-		IndexName          string
 		AvailableDiskSpace uint64
 	}{
-		AppId:              *algoliaAppId,
-		SearchKey:          *algoliaSearchKey,
-		IndexName:          *algoliaIndex,
 		AvailableDiskSpace: fsStat.Available / GB,
 	}
 

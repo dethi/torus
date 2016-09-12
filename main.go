@@ -205,10 +205,5 @@ func startService(activeJobs int) {
 
 func main() {
 	flag.Parse()
-
-	if *migrate {
-		migration()
-	} else {
-		startService(*activeJobs)
-	}
+	startService(*activeJobs)
 }

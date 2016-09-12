@@ -2,10 +2,6 @@ package: github.com/dethi/torrent_service
 import:
 - package: github.com/abbot/go-http-auth
   version: ^0.3.0
-- package: github.com/algolia/algoliasearch-client-go
-  version: ^2.0.0
-  subpackages:
-  - algoliasearch
 - package: github.com/anacrolix/torrent
   subpackages:
   - metainfo

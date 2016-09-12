@@ -8,13 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/algolia/algoliasearch-client-go/algoliasearch"
 	"github.com/boltdb/bolt"
 )
 
 type Database struct {
 	db     *bolt.DB
-	index  *algoliasearch.Index
 	logger *log.Logger
 
 	requests map[string][]string
@@ -39,10 +37,8 @@ func NewDatabase(dbPath string) *Database {
 		log.Fatalln("creating bucket: %v", err)
 	}
 
-	client := algoliasearch.NewClient(*algoliaAppId, *algoliaApiKey)
 	return &Database{
 		db:       db,
-		index:    client.InitIndex(*algoliaIndex),
 		logger:   log.New(os.Stderr, "Database: ", log.LstdFlags),
 		requests: make(map[string][]string),
 		Mutex:    &sync.Mutex{},
@@ -110,26 +106,9 @@ func (s *Database) PutRecord(r Record) {
 		s.logger.Printf("put %v: %v", r.InfoHash[:7], err)
 		return
 	}
-
-	if _, err = s.index.AddObject(r); err != nil {
-		s.logger.Printf("indexing %v: %v", r.InfoHash[:7], err)
-	}
-}
-
-func (s *Database) ReindexRecords() {
-	if _, err := s.index.Clear(); err != nil {
-		s.logger.Printf("clearing index: %v", err)
-	}
-	for _, r := range s.ViewRecords() {
-		if _, err := s.index.AddObject(r); err != nil {
-			s.logger.Printf("indexing %v: %v", r.InfoHash[:7], err)
-		}
-	}
 }
 
 func (s *Database) DeleteRecords(age time.Duration) {
-	deleted := false
-
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(tBucket)
 
@@ -140,7 +119,6 @@ func (s *Database) DeleteRecords(age time.Duration) {
 			}
 
 			if time.Since(blob.EndTime) > age {
-				deleted = true
 				if err := b.Delete(k); err != nil {
 					return fmt.Errorf("delete records: %v: %v", k[:7], err)
 				}
@@ -158,11 +136,6 @@ func (s *Database) DeleteRecords(age time.Duration) {
 	})
 	if err != nil {
 		s.logger.Printf("remove old records: %v", err)
-	}
-
-	if deleted {
-		// TODO: remove records one by one instead of reindexing all
-		s.ReindexRecords()
 	}
 }
 
