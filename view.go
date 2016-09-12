@@ -16,8 +16,10 @@ func listView(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		AvailableDiskSpace uint64
+		Records            []Record
 	}{
 		AvailableDiskSpace: fsStat.Available / GB,
+		Records:            db.ViewRecords(),
 	}
 
 	listTmpl.Execute(w, data)

@@ -36,10 +36,12 @@ type Record struct {
 	tFiles  []string
 }
 
+var db *Database
+
 func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 	endJob <-chan Record, quit <-chan os.Signal) {
 
-	db := NewDatabase(*dbPath)
+	db = NewDatabase(*dbPath)
 	defer db.Close()
 
 	scheduler.Every(1).Hours().Run(func() {

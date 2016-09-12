@@ -22,7 +22,7 @@
           <nav class="level">
             <div class="level-item has-text-centered">
               <p class="heading">Torrents</p>
-              <p class="title">2</p>
+              <p class="title">{{len .Records}}</p>
             </div>
             <div class="level-item has-text-centered">
               <p class="heading">Disk Space</p>
@@ -46,25 +46,22 @@
           <thead>
             <tr>
               <th>Name</th>
-              <th>Since</th>
+              <th>Date</th>
               <th>Link</th>
             </tr>
           </thead>
           <tbody>
+            {{range .Records}}
             <tr>
-              <td>The 100 S01</td>
-              <td>10 hours</td>
+              <td>{{.Name}}</td>
+              <td>{{.EndTime}}</td>
               <td class="is-icon">
-                <a href="#"><i class="fa fa-globe"></i></a>
+                <a href="/data/{{.InfoHash}}.tar">
+                  <i class="fa fa-globe"></i>
+                </a>
               </td>
             </tr>
-            <tr>
-              <td>The 100 S02</td>
-              <td>15 hours</td>
-              <td class="is-icon">
-                <a href="#"><i class="fa fa-globe"></i></a>
-              </td>
-            </tr>
+            {{end}}
           </tbody>
         </table>
       </div>
