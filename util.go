@@ -48,6 +48,8 @@ func CleanName(filename string) string {
 	s = regexClean.ReplaceAllString(s, "")
 	s = strings.TrimSpace(s)
 	s = strings.Replace(s, ".", "-", -1)
+	s = strings.Replace(s, "[", "-", -1)
+	s = strings.replace(s, "]", "-", -1)
 	s = strings.Replace(s, " ", "-", -1)
 	s = strings.Trim(s, "-")
 	s = strings.Title(s)
