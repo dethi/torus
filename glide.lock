@@ -1,12 +1,8 @@
-hash: 275726502cfba16f9ba0cd51c0a02c940afd22dbb91c869fa1b4963b475d4adf
-updated: 2016-09-12T23:47:56.62446917+02:00
+hash: 8dd16b175555d0c4eeb40b29bc047505d16b0c891bf9ec4f9e6cb13ab3ac0a91
+updated: 2016-09-13T01:41:44.563421456+02:00
 imports:
 - name: github.com/abbot/go-http-auth
   version: efc9484eee77263a11f158ef4f30fcc30298a942
-- name: github.com/algolia/algoliasearch-client-go
-  version: 4467dcad0f94e7e88d621c3a74b5696ba2ba095e
-  subpackages:
-  - algoliasearch
 - name: github.com/anacrolix/missinggo
   version: 52a4107125de297154688361523087a7f2a416b9
   subpackages:
