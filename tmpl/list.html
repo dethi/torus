@@ -46,15 +46,15 @@
           <thead>
             <tr>
               <th>Name</th>
-              <th>Date</th>
-              <th>Link</th>
+              <th>Since</th>
+              <th>Download</th>
             </tr>
           </thead>
           <tbody>
             {{range .Records}}
             <tr>
               <td>{{.Name}}</td>
-              <td>{{.EndTime}}</td>
+              <td>{{.Since}}</td>
               <td class="is-icon">
                 <a href="/data/{{.InfoHash}}.tar">
                   <i class="fa fa-globe"></i>
