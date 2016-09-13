@@ -2,14 +2,15 @@ release: prod build push
 
 prod:
 	go-bindata -nomemcopy -nometadata tmpl
-	GOOS=linux GOARCH=amd64 go build -v -a -ldflags '-s -w'
-	upx torrent_service
+	#GOOS=linux GOARCH=amd64 go build -i
+	docker run --rm -v "$PWD":/go/src/torus -w /go/src/torus golang go build -v
+	upx torus
 
 build:
-	docker build -t dethi/torrent_service .
+	docker build -t dethi/torus .
 
 push:
-	docker push dethi/torrent_service
+	docker push dethi/torus
 
 clean:
 	go clean
