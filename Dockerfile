@@ -9,5 +9,5 @@ WORKDIR /app
 
 RUN apk-install ca-certificates
 
-COPY torrent_service /app/
-ENTRYPOINT ["./torrent_service"]
+COPY torus /app/
+ENTRYPOINT ["./torus"]
