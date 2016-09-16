@@ -19,10 +19,16 @@ var (
 	dataPath     = flag.String("dataPath", "/static/data", "path to data")
 	htpasswdPath = flag.String("htpasswdPath", "/static/htpasswd", "path to htpasswd")
 
+	versionFlag = flag.Bool("v", false, "prints current version")
+
 	activeJobs = flag.Int("activeJobs", 3, "number of active torrents")
 
 	tBucket    = []byte("Torrents")
 	listTmpl   = MustTemplate("tmpl/list.html")
 	regexUrl   = regexp.MustCompile(findUrl)
 	regexClean = regexp.MustCompile(cleanName)
+)
+
+var (
+	version string
 )

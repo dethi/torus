@@ -49,9 +49,11 @@ func listView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
+		Version            string
 		AvailableDiskSpace uint64
 		Records            []Result
 	}{
+		Version:            version,
 		AvailableDiskSpace: fsStat.Available / GB,
 		Records:            res,
 	}

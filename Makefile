@@ -1,19 +1,29 @@
-release: prod build push
+PROJECT = torus
+AUTHOR = dethi
 
-prod:
+GOBUILD = go build -v -i -ldflags "-X main.version=`git rev-parse --short HEAD``date -u +-%Y%m%d.%H%M%S`"
+
+all: build-debug
+
+release: build-prod docker-build docker-push clean
+
+build-debug:
+	go-bindata -debug tmpl
+	$(GOBUILD)
+
+build-prod:
 	go-bindata -nomemcopy -nometadata tmpl
-	#GOOS=linux GOARCH=amd64 go build -i
-	docker run --rm -v "${PWD}":/go/src/torus -w /go/src/torus golang go build -v -i
-	#upx torus
+	docker run --rm -v "${PWD}":/go/src/$(PROJECT) -w /go/src/$(PROJECT) \
+		golang $(GOBUILD)
 
-build:
-	docker build -t dethi/torus .
+docker-build:
+	docker build -t $(AUTHOR)/$(PROJECT) .
 
-push:
-	docker push dethi/torus
+docker-push:
+	docker push $(AUTHOR)/$(PROJECT)
 
 clean:
 	go clean
 	rm -f *.upx
 
-.PHONY: release prod build push clean
+.PHONY: all release build-dev build-prod docker-build docker-push clean

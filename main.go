@@ -207,5 +207,10 @@ func startService(activeJobs int) {
 
 func main() {
 	flag.Parse()
+	if *versionFlag {
+		fmt.Println("Version:", version)
+		return
+	}
+
 	startService(*activeJobs)
 }
