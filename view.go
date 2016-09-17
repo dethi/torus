@@ -3,10 +3,8 @@ package main
 import (
 	"net/http"
 	"sort"
-	"time"
 
 	"github.com/dethi/goutil/fs"
-	"github.com/hako/durafmt"
 )
 
 const GB = 1024 * 1024 * 1024
@@ -34,7 +32,7 @@ func listView(w http.ResponseWriter, r *http.Request) {
 	type Result struct {
 		Name     string
 		InfoHash string
-		Since    *durafmt.Durafmt
+		Date     int64
 	}
 	var res []Result
 
@@ -44,7 +42,7 @@ func listView(w http.ResponseWriter, r *http.Request) {
 		res = append(res, Result{
 			Name:     r.Name,
 			InfoHash: r.InfoHash,
-			Since:    durafmt.Parse(time.Since(r.EndTime)),
+			Date:     r.EndTime.UnixNano() / 1e6,
 		})
 	}
 
