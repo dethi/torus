@@ -1,4 +1,4 @@
-package: github.com/dethi/torrent_service
+package: github.com/dethi/torus
 import:
 - package: github.com/abbot/go-http-auth
   version: ^0.3.0
@@ -18,4 +18,3 @@ import:
 - package: golang.org/x/net
   subpackages:
   - html
-- package: github.com/hako/durafmt

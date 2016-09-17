@@ -1,5 +1,5 @@
-hash: f337f25c26414c6b42096b968ba66f971f1d083a2cfbcf2c14c8a59f457ae83f
-updated: 2016-09-13T03:26:45.285724415+02:00
+hash: f1ba15b26969caeae5a22cace2a6355b6dc3507a5c60781c1c7e6173e9521574
+updated: 2016-09-18T00:45:40.677850045+02:00
 imports:
 - name: github.com/abbot/go-http-auth
   version: efc9484eee77263a11f158ef4f30fcc30298a942
@@ -52,8 +52,6 @@ imports:
   version: 935e0e8a636ca4ba70b713f3e38a19e1b77739e8
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
-- name: github.com/hako/durafmt
-  version: ea3ab126a6496974aea2b579acbc327514a55b50
 - name: github.com/mailgun/mailgun-go
   version: 369a1fa57ce6fb314e627087b9fff0db5c266c0f
 - name: github.com/mattn/go-sqlite3
