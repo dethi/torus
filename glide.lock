@@ -1,5 +1,5 @@
-hash: f1ba15b26969caeae5a22cace2a6355b6dc3507a5c60781c1c7e6173e9521574
-updated: 2016-09-18T00:45:40.677850045+02:00
+hash: c4d66df6a763ea47fd3cd9cddac13f6b4c726a80dadba99388acc51bc6c6c907
+updated: 2016-09-18T19:01:56.075636854+02:00
 imports:
 - name: github.com/abbot/go-http-auth
   version: efc9484eee77263a11f158ef4f30fcc30298a942
@@ -40,6 +40,8 @@ imports:
   version: 583e8937c61f1af6513608ccc75c97b6abdf4ff9
 - name: github.com/bradfitz/iter
   version: 454541ec3da2a73fc34fd049b19ee5777bf19345
+- name: github.com/BurntSushi/toml
+  version: bbd5bb678321a0d6e58f1099321dfa73391c1b6f
 - name: github.com/carlescere/scheduler
   version: ddcf6a6be3e8bd4b480f96031d9e1f3abecf2767
 - name: github.com/dethi/goutil

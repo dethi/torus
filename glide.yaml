@@ -18,3 +18,5 @@ import:
 - package: golang.org/x/net
   subpackages:
   - html
+- package: github.com/BurntSushi/toml
+  version: ^0.2.0
