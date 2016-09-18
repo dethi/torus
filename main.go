@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -184,15 +183,8 @@ func startService(activeJobs int) {
 		return true
 	})
 
-	var downloader []*Downloader
-	for i := 0; i < activeJobs; i++ {
-		downloader = append(downloader,
-			NewDownloader(newJob, endJob, tmpDir))
-	}
-	for i, srv := range downloader {
-		listenAddr := ":" + strconv.Itoa(50007+i)
-		srv.Start(listenAddr)
-	}
+	var downloader = NewDownloader(newJob, endJob, tmpDir)
+	downloader.Start()
 
 	authenticator := auth.NewBasicAuthenticator("tr.dethi.fr",
 		auth.HtpasswdFileProvider(cfg.HtpasswdPath))
@@ -216,5 +208,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	startService(cfg.DownloadToken)
+	startService(int(cfg.DownloadToken))
 }

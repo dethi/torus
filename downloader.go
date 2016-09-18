@@ -8,70 +8,85 @@ import (
 	"path/filepath"
 	"time"
 
-	tr "github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
 	"github.com/dethi/goutil/fs"
+	"github.com/dethi/torus/torrent"
+	"github.com/pkg/errors"
 )
 
 type Downloader struct {
-	in  <-chan Record
-	out chan<- Record
-	dir string
-
+	in     <-chan Record
+	out    chan<- Record
 	logger *log.Logger
-	client *tr.Client
+
+	service *torrent.Service
 }
 
 func NewDownloader(in <-chan Record, out chan<- Record,
 	dir string) *Downloader {
 
 	return &Downloader{
-		in:  in,
-		out: out,
-		dir: dir,
-
+		in:     in,
+		out:    out,
 		logger: log.New(os.Stderr, "Downloader: ", log.LstdFlags),
+
+		service: torrent.NewService(cfg.DownloadToken, dir),
 	}
 }
 
-func (s *Downloader) Start(addr string) error {
-	cl, err := tr.NewClient(&tr.Config{
-		DataDir:    s.dir,
-		ListenAddr: addr,
-		NoUpload:   true,
-		Seed:       false,
-		Debug:      false,
-	})
-	if err != nil {
-		return fmt.Errorf("creating client: %v", err)
-	}
-	s.client = cl
-
-	s.accept()
-	return nil
-}
-
-func (s *Downloader) accept() {
+func (d *Downloader) Start() {
 	go func() {
-		for record := range s.in {
-			s.logger.Printf("start request: %v", record.InfoHash[:7])
-			err := s.download(&record)
-			if err != nil {
-				s.logger.Printf("error while downloding: %v: %v",
-					record.InfoHash[:7], err)
-				record.err = err
+		for record := range d.in {
+			// Wait for disk space (if needed)
+			if err := waitDiskSpace(record); err != nil {
+				d.logger.Print(err)
+				continue
+			}
+			if err := readInfo(d.service.DataDir, &record); err != nil {
+				d.logger.Print(err)
+				continue
 			}
 
-			s.out <- record
-			s.logger.Printf("end request: %v", record.InfoHash[:7])
-		}
+			d.logger.Printf("start request: %v", record.InfoHash[:7])
 
-		defer s.client.Close()
+			// Download
+			t := torrent.Torrent{Body: record.torrent}
+			ch := d.service.Add(t)
+			for task := range ch {
+				record.err = task.Error
+			}
+
+			record.EndDownloadTime = time.Now()
+			d.out <- record
+
+			d.logger.Printf("end request: %v", record.InfoHash[:7])
+		}
 	}()
 }
 
-func (s *Downloader) download(record *Record) error {
-	tBuf := bytes.NewBuffer(record.torrent)
+func readInfo(dataDir string, r *Record) error {
+	buf := bytes.NewBuffer(r.torrent)
+	mi, err := metainfo.Load(buf)
+	if err != nil {
+		return errors.Wrap(err, "loading metainfo")
+	}
+	info := mi.UnmarshalInfo()
+	r.Name = info.Name
+
+	for _, fileinfo := range info.UpvertedFiles() {
+		if fileinfo.Path == nil {
+			fileinfo.Path = []string{info.Name}
+		}
+		for _, path := range fileinfo.Path {
+			r.tFiles = append(r.tFiles, filepath.Join(dataDir, path))
+		}
+	}
+
+	return nil
+}
+
+func waitDiskSpace(r Record) error {
+	tBuf := bytes.NewBuffer(r.torrent)
 	metaInfo, err := metainfo.Load(tBuf)
 	if err != nil {
 		return fmt.Errorf("loading metainfo: %v", err)
@@ -94,22 +109,5 @@ func (s *Downloader) download(record *Record) error {
 		}
 	}
 
-	t, err := s.client.AddTorrent(metaInfo)
-	if err != nil {
-		return fmt.Errorf("adding metainfo: %v", err)
-	}
-
-	<-t.GotInfo()
-	record.Name = t.Name()
-
-	t.DownloadAll()
-	s.client.WaitAll()
-	record.EndDownloadTime = time.Now()
-
-	for _, f := range t.Files() {
-		path := filepath.Join(s.dir, f.Path())
-		record.tFiles = append(record.tFiles, path)
-	}
-	t.Drop()
 	return nil
 }

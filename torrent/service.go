@@ -20,20 +20,20 @@ type TorrentTask struct {
 	Error   error
 }
 
-type TorrentService struct {
+type Service struct {
 	DataDir string
 
 	token  chan struct{}
 	logger *log.Logger
 }
 
-func New(token uint, dataDir string) *TorrentService {
+func NewService(token uint, dataDir string) *Service {
 	ch := make(chan struct{}, token)
 	for i := uint(0); i < token; i++ {
 		ch <- struct{}{}
 	}
 
-	return &TorrentService{
+	return &Service{
 		DataDir: dataDir,
 		token:   ch,
 		logger:  log.New(os.Stderr, "TorrentService: ", log.LstdFlags),
@@ -41,7 +41,7 @@ func New(token uint, dataDir string) *TorrentService {
 }
 
 // Add torrents to the download queue and return a response channel.
-func (ts *TorrentService) Add(torrents ...Torrent) chan<- TorrentTask {
+func (ts *Service) Add(torrents ...Torrent) <-chan TorrentTask {
 	ch := make(chan TorrentTask, len(torrents))
 	go func() {
 		<-ts.token
@@ -65,7 +65,7 @@ func (ts *TorrentService) Add(torrents ...Torrent) chan<- TorrentTask {
 
 // Create a new client with a random free port and block until all downloads
 // have finished. The client is closed at the end.
-func (ts *TorrentService) download(torrents ...Torrent) ([]TorrentTask, error) {
+func (ts *Service) download(torrents ...Torrent) ([]TorrentTask, error) {
 	client, err := torrent.NewClient(&torrent.Config{
 		DataDir:    ts.DataDir,
 		ListenAddr: ":0", // Pick a random free port

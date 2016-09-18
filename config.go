@@ -9,7 +9,7 @@ type Config struct {
 	DatabasePath  string `toml:"database_path"`
 	DataPath      string `toml:"data_path"`
 	HtpasswdPath  string `toml:"htpasswd_path"`
-	DownloadToken int    `toml:"download_token"`
+	DownloadToken uint   `toml:"download_token"`
 
 	Mailgun MailgunConfig `toml:"mailgun"`
 }
