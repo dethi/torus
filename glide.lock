@@ -1,5 +1,5 @@
-hash: c4d66df6a763ea47fd3cd9cddac13f6b4c726a80dadba99388acc51bc6c6c907
-updated: 2016-09-18T19:01:56.075636854+02:00
+hash: 0ebb699488150c2c852486f069d96c222371ec01f5725de66f78a1f30bc5f466
+updated: 2016-09-18T20:23:14.407824534+02:00
 imports:
 - name: github.com/abbot/go-http-auth
   version: efc9484eee77263a11f158ef4f30fcc30298a942
@@ -58,6 +58,8 @@ imports:
   version: 369a1fa57ce6fb314e627087b9fff0db5c266c0f
 - name: github.com/mattn/go-sqlite3
   version: 3fb7a0e792edd47bf0cf1e919dfc14e2be412e15
+- name: github.com/pkg/errors
+  version: 17b591df37844cde689f4d5813e5cea0927d8dd2
 - name: github.com/RoaringBitmap/roaring
   version: 175c763f3ba3bae6d079757c5222682002869a59
 - name: github.com/ryszard/goskiplist
