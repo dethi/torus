@@ -24,7 +24,7 @@ func (p byDate) Swap(i, j int) {
 }
 
 func listView(w http.ResponseWriter, r *http.Request) {
-	fsStat, err := fs.GetFsStats(*dataPath)
+	fsStat, err := fs.GetFsStats(cfg.DataPath)
 	if err != nil {
 		fsStat = &fs.FsStats{Available: 0}
 	}

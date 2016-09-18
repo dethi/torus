@@ -41,7 +41,7 @@ var db *Database
 func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 	endJob <-chan Record, quit <-chan os.Signal) {
 
-	db = NewDatabase(*dbPath)
+	db = NewDatabase(cfg.DatabasePath)
 	defer db.Close()
 
 	scheduler.Every(1).Hours().Run(func() {
@@ -99,7 +99,7 @@ func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 			}
 
 			r.Name = CleanName(r.Name)
-			r.FilePath = filepath.Join(*dataPath, r.InfoHash+".tar")
+			r.FilePath = filepath.Join(cfg.DataPath, r.InfoHash+".tar")
 			if err := createTarball(r); err != nil {
 				// TODO: error handling
 				fmt.Println(err)
@@ -179,7 +179,7 @@ func startService(activeJobs int) {
 	newJob := make(chan Record, 100)
 	endJob := make(chan Record, 100)
 
-	mailer := NewMailer(*mgDomain, *mgKey, *mgPublicKey)
+	mailer := NewMailer(cfg.Mailgun.Domain, cfg.Mailgun.SecretKey, cfg.Mailgun.PublicKey)
 	mailer.ReceiveMsg("/mg-mail", newMail, func(_ string) bool {
 		return true
 	})
@@ -195,11 +195,11 @@ func startService(activeJobs int) {
 	}
 
 	authenticator := auth.NewBasicAuthenticator("tr.dethi.fr",
-		auth.HtpasswdFileProvider(*htpasswdPath))
+		auth.HtpasswdFileProvider(cfg.HtpasswdPath))
 
 	http.HandleFunc("/", auth.JustCheck(authenticator, listView))
 	http.Handle("/data/", http.StripPrefix("/data/",
-		http.FileServer(http.Dir(*dataPath))))
+		http.FileServer(http.Dir(cfg.DataPath))))
 	go http.ListenAndServe(":80", nil)
 	dispatcher(mailer, newMail, newJob, endJob, quit)
 	fmt.Println("Gracefully stop service...")
@@ -208,9 +208,13 @@ func startService(activeJobs int) {
 func main() {
 	flag.Parse()
 	if *versionFlag {
-		fmt.Println("Version:", version)
+		fmt.Println("rev", version)
 		return
 	}
 
-	startService(*activeJobs)
+	if err := LoadConfig(*configPath); err != nil {
+		log.Fatal(err)
+	}
+
+	startService(cfg.DownloadToken)
 }

@@ -79,7 +79,7 @@ func (s *Downloader) download(record *Record) error {
 
 	info := metaInfo.UnmarshalInfo()
 	size := uint64(info.TotalLength())
-	fsStat, err := fs.GetFsStats(*dataPath)
+	fsStat, err := fs.GetFsStats(cfg.DataPath)
 	if err != nil {
 		return fmt.Errorf("stat fs: %v", err)
 	}
@@ -89,7 +89,7 @@ func (s *Downloader) download(record *Record) error {
 		time.Sleep(10 * time.Minute)
 
 		// Update value
-		if v, _ := fs.GetFsStats(*dataPath); v != nil {
+		if v, _ := fs.GetFsStats(cfg.DataPath); v != nil {
 			fsStat = v
 		}
 	}

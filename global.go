@@ -11,17 +11,8 @@ const (
 )
 
 var (
-	mgDomain    = flag.String("mgDomain", "", "mailgun domain")
-	mgKey       = flag.String("mgKey", "", "mailgun key")
-	mgPublicKey = flag.String("mgPublicKey", "", "mailgun public key")
-
-	dbPath       = flag.String("dbPath", "/static/torrents.db", "path to database")
-	dataPath     = flag.String("dataPath", "/static/data", "path to data")
-	htpasswdPath = flag.String("htpasswdPath", "/static/htpasswd", "path to htpasswd")
-
+	configPath  = flag.String("config", "torus.cfg", "config pathname")
 	versionFlag = flag.Bool("v", false, "prints current version")
-
-	activeJobs = flag.Int("activeJobs", 3, "number of active torrents")
 
 	tBucket    = []byte("Torrents")
 	listTmpl   = MustTemplate("tmpl/list.html")
