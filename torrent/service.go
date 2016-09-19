@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
@@ -11,8 +12,47 @@ import (
 )
 
 type Torrent struct {
-	Name string
-	Body []byte
+	Name     string
+	Size     uint64
+	InfoHash string
+	Files    []string
+
+	Payload []byte
+}
+
+func NewTorrent(payload []byte) (Torrent, error) {
+	var t Torrent
+
+	buf := bytes.NewBuffer(payload)
+	mi, err := metainfo.Load(buf)
+	if err != nil {
+		return t, errors.Wrap(err, "read torrent info")
+	}
+	info := mi.UnmarshalInfo()
+
+	t.Name = info.Name
+	t.Size = uint64(info.TotalLength())
+	t.InfoHash = convertInfoHash(mi.HashInfoBytes())
+	t.Payload = payload
+
+	for _, fileInfo := range info.UpvertedFiles() {
+		if fileInfo.Path != nil {
+			// Multiple files
+			for _, path := range fileInfo.Path {
+				t.Files = append(t.Files, filepath.Join(t.Name, path))
+			}
+		} else {
+			// Simple file
+			t.Files = append(t.Files, t.Name)
+		}
+	}
+
+	return t, nil
+}
+
+func convertInfoHash(b [20]byte) string {
+	slice := b[:]
+	return string(slice)
 }
 
 type TorrentTask struct {
@@ -85,7 +125,7 @@ func (ts *Service) download(torrents ...Torrent) ([]TorrentTask, error) {
 	for i, t := range torrents {
 		tasks[i].Torrent = t
 
-		buf := bytes.NewBuffer(t.Body)
+		buf := bytes.NewBuffer(t.Payload)
 		mi, err := metainfo.Load(buf)
 		if err != nil {
 			// This should never happened because metainfo are pre-loaded

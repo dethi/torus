@@ -50,7 +50,7 @@ func (d *Downloader) Start() {
 			d.logger.Printf("start request: %v", record.InfoHash[:7])
 
 			// Download
-			t := torrent.Torrent{Body: record.torrent}
+			t := torrent.Torrent{Payload: record.torrent}
 			ch := d.service.Add(t)
 			for task := range ch {
 				record.err = task.Error
