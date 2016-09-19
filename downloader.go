@@ -75,10 +75,12 @@ func readInfo(dataDir string, r *Record) error {
 
 	for _, fileinfo := range info.UpvertedFiles() {
 		if fileinfo.Path == nil {
-			fileinfo.Path = []string{info.Name}
-		}
-		for _, path := range fileinfo.Path {
-			r.tFiles = append(r.tFiles, filepath.Join(dataDir, path))
+			// Simple file
+			r.tFiles = append(r.tFiles, filepath.Join(dataDir, info.Name))
+		} else {
+			for _, path := range fileinfo.Path {
+				r.tFiles = append(r.tFiles, filepath.Join(dataDir, info.Name, path))
+			}
 		}
 	}
 

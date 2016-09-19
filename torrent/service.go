@@ -69,12 +69,12 @@ func (ts *Service) download(torrents ...Torrent) ([]TorrentTask, error) {
 	client, err := torrent.NewClient(&torrent.Config{
 		DataDir:    ts.DataDir,
 		ListenAddr: ":0", // Pick a random free port
-		NoDHT:      true,
 		NoUpload:   true,
 		Seed:       false,
-		DisableUTP: true,
+		Debug:      false,
+		//NoDHT:      true,
+		//DisableUTP: true,
 		//ForceEncryption: true, // TODO: update dep to use this
-		Debug: false,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "initialize client")
