@@ -26,7 +26,7 @@ func NewTorrent(payload []byte) (Torrent, error) {
 	buf := bytes.NewBuffer(payload)
 	mi, err := metainfo.Load(buf)
 	if err != nil {
-		return t, errors.Wrap(err, "read torrent info")
+		return t, errors.Wrap(err, "load metainfo")
 	}
 	info := mi.UnmarshalInfo()
 
