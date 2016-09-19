@@ -13,7 +13,8 @@ build-debug:
 
 build-prod:
 	go-bindata -nomemcopy -nometadata tmpl
-	docker run --rm -v "${PWD}":/go/src/$(PROJECT) -w /go/src/$(PROJECT) \
+	docker run --rm -v "${PWD}":/go/src/github.com/$(AUTHOR)/$(PROJECT) \
+		-w /go/src/github.com/$(AUTHOR)/$(PROJECT) \
 		golang $(GOBUILD)
 
 docker-build:

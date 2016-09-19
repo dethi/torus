@@ -163,7 +163,7 @@ func createTarball(r Record) error {
 	return nil
 }
 
-func startService(activeJobs int) {
+func startService() {
 	fmt.Println("Start service...")
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, os.Kill, syscall.SIGTERM)
@@ -192,7 +192,7 @@ func startService(activeJobs int) {
 	http.HandleFunc("/", auth.JustCheck(authenticator, listView))
 	http.Handle("/data/", http.StripPrefix("/data/",
 		http.FileServer(http.Dir(cfg.DataPath))))
-	go http.ListenAndServe(":80", nil)
+	go http.ListenAndServe(":8000", nil)
 	dispatcher(mailer, newMail, newJob, endJob, quit)
 	fmt.Println("Gracefully stop service...")
 }
@@ -208,5 +208,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	startService(int(cfg.DownloadToken))
+	startService()
 }
