@@ -78,7 +78,7 @@ func (s *Database) ViewRecords() []Record {
 		return b.ForEach(func(k, v []byte) error {
 			var blob Record
 			if err := json.Unmarshal(v, &blob); err != nil {
-				return fmt.Errorf("unmarshal %v: %v", k[:7], err)
+				return fmt.Errorf("unmarshal %x: %v", k[:7], err)
 			}
 			records = append(records, blob)
 			return nil
@@ -115,12 +115,12 @@ func (s *Database) DeleteRecords(age time.Duration) {
 		return b.ForEach(func(k, v []byte) error {
 			var blob Record
 			if err := json.Unmarshal(v, &blob); err != nil {
-				return fmt.Errorf("unmarshal %v: %v", k[:7], err)
+				return fmt.Errorf("unmarshal %x: %v", k[:7], err)
 			}
 
 			if time.Since(blob.EndTime) > age {
 				if err := b.Delete(k); err != nil {
-					return fmt.Errorf("delete records: %v: %v", k[:7], err)
+					return fmt.Errorf("delete records: %x: %v", k[:7], err)
 				}
 
 				var size int64
@@ -128,7 +128,7 @@ func (s *Database) DeleteRecords(age time.Duration) {
 					size = stat.Size()
 				}
 				os.Remove(blob.Pathname)
-				s.logger.Printf("records removed: %v: %v bytes", k[:7], size)
+				s.logger.Printf("records removed: %x: %v bytes", k[:7], size)
 			}
 
 			return nil

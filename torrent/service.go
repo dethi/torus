@@ -2,6 +2,7 @@ package torrent
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -53,7 +54,7 @@ func NewTorrent(payload []byte) (Torrent, error) {
 
 func convertInfoHash(b [20]byte) string {
 	slice := b[:]
-	return string(slice)
+	return fmt.Sprintf("%x", slice)
 }
 
 type TorrentTask struct {
