@@ -34,7 +34,7 @@ type Record struct {
 var db *Database
 
 func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
-	endJob <-chan Record, quit <-chan os.Signal) {
+	endJob <-chan Record, quit <-chan os.Signal, tmpDir string) {
 
 	db = NewDatabase(cfg.DatabasePath)
 	defer db.Close()
@@ -91,7 +91,7 @@ func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 			}
 
 			r.Pathname = filepath.Join(cfg.DataPath, r.InfoHash+".tar")
-			files := util.AddPathPrefix(cfg.DataPath, r.Files...)
+			files := util.AddPathPrefix(tmpDir, r.Files...)
 
 			if err := util.CreateTarball(r.Pathname, files...); err != nil {
 				fmt.Println(err)
@@ -141,7 +141,7 @@ func startService() {
 	http.Handle("/data/", http.StripPrefix("/data/",
 		http.FileServer(http.Dir(cfg.DataPath))))
 	go http.ListenAndServe(":8000", nil)
-	dispatcher(mailer, newMail, newJob, endJob, quit)
+	dispatcher(mailer, newMail, newJob, endJob, quit, tmpDir)
 	fmt.Println("Gracefully stop service...")
 }
 
