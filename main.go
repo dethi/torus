@@ -90,7 +90,6 @@ func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 				continue
 			}
 
-			r.Name = util.CleanName(r.Name)
 			r.Pathname = filepath.Join(cfg.DataPath, r.InfoHash+".tar")
 			files := util.AddPathPrefix(cfg.DataPath, r.Files...)
 
