@@ -8,6 +8,7 @@ import (
 
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
+	"github.com/dethi/torus/util"
 	"github.com/pkg/errors"
 )
 
@@ -30,7 +31,7 @@ func NewTorrent(payload []byte) (Torrent, error) {
 	}
 	info := mi.UnmarshalInfo()
 
-	t.Name = info.Name
+	t.Name, _ = util.SplitFilename(util.CleanName(info.Name))
 	t.Size = uint64(info.TotalLength())
 	t.InfoHash = convertInfoHash(mi.HashInfoBytes())
 	t.Payload = payload
@@ -39,11 +40,11 @@ func NewTorrent(payload []byte) (Torrent, error) {
 		if fileInfo.Path != nil {
 			// Multiple files
 			for _, path := range fileInfo.Path {
-				t.Files = append(t.Files, filepath.Join(t.Name, path))
+				t.Files = append(t.Files, filepath.Join(info.Name, path))
 			}
 		} else {
 			// Simple file
-			t.Files = append(t.Files, t.Name)
+			t.Files = append(t.Files, info.Name)
 		}
 	}
 

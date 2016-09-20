@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/dethi/goutil/fs"
@@ -34,37 +33,24 @@ func NewDownloader(in <-chan Record, out chan<- Record,
 func (d *Downloader) Start() {
 	go func() {
 		for record := range d.in {
-			t, err := torrent.NewTorrent(record.torrent)
-			if err != nil {
-				d.logger.Print(err)
-				continue
-			}
-
-			if err := waitDiskSpace(t.Size); err != nil {
+			if err := waitDiskSpace(record.Size); err != nil {
 				d.logger.Print(err)
 				continue
 			}
 			d.logger.Printf("start request: %v", record.InfoHash[:7])
 
 			// Download
-			ch := d.service.Add(t)
+			ch := d.service.Add(record.Torrent)
 			for task := range ch {
 				record.err = task.Error
 			}
 
-			updatePathname(&record, d.service.DataDir, t.Files)
 			record.EndDownloadTime = time.Now()
 			d.out <- record
 
 			d.logger.Printf("end request: %v", record.InfoHash[:7])
 		}
 	}()
-}
-
-func updatePathname(r *Record, dataDir string, files []string) {
-	for _, pathname := range files {
-		r.tFiles = append(r.tFiles, filepath.Join(dataDir, pathname))
-	}
 }
 
 func waitDiskSpace(size uint64) error {

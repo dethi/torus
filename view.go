@@ -1,6 +1,7 @@
 package main
 
 import (
+	"html/template"
 	"net/http"
 	"sort"
 
@@ -57,4 +58,9 @@ func listView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	listTmpl.Execute(w, data)
+}
+
+func MustTemplate(name string) *template.Template {
+	t := template.New(name)
+	return template.Must(t.Parse(string(MustAsset(name))))
 }

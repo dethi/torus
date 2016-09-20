@@ -1,10 +1,8 @@
 package main
 
 import (
-	"archive/tar"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,22 +15,20 @@ import (
 
 	"github.com/abbot/go-http-auth"
 	"github.com/carlescere/scheduler"
+	"github.com/dethi/torus/torrent"
+	"github.com/dethi/torus/util"
 )
 
 type Record struct {
 	BeginTime       time.Time
 	EndDownloadTime time.Time
 	EndTime         time.Time
+	RequestedBy     string
+	Pathname        string
 
-	InfoHash    string
-	Name        string
-	FilePath    string
-	RequestedBy string
+	torrent.Torrent
 
 	err error
-
-	torrent []byte
-	tFiles  []string
 }
 
 var db *Database
@@ -53,30 +49,29 @@ func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 			return
 		case msg := <-newMail:
 			for _, url := range regexUrl.FindAllString(msg.Body, -1) {
-				torrent, err := FetchTorrent(url)
+				payload, err := FetchTorrent(url)
 				if err != nil {
 					fmt.Println(err)
 					continue
 				}
 
-				infoHash := InfoHash(torrent)
-				if infoHash == "" {
-					// TODO log
-					fmt.Println("skip because empty hash")
+				torrent, err := torrent.NewTorrent(payload)
+				if err != nil {
+					fmt.Println(err)
 					continue
 				}
 
 				// The request exist and is finished, just send an email
 				// and leave.
-				if r := db.GetRecord(infoHash); r != nil {
+				if r := db.GetRecord(torrent.InfoHash); r != nil {
 					mailer.NotifyUser(r, []string{msg.From})
 					continue
 				}
 
 				// The request is currently processing, just add the email
 				// and leave.
-				exist := (db.GetRequest(infoHash) != nil)
-				db.PutRequest(infoHash, msg.From)
+				exist := (db.GetRequest(torrent.InfoHash) != nil)
+				db.PutRequest(torrent.InfoHash, msg.From)
 				if exist {
 					fmt.Println("wait, record is processing")
 					continue
@@ -84,29 +79,28 @@ func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 
 				r := Record{
 					BeginTime:   time.Now(),
-					InfoHash:    infoHash,
 					RequestedBy: msg.From,
-					torrent:     torrent,
+					Torrent:     torrent,
 				}
 				newJob <- r
 			}
 		case r := <-endJob:
 			if r.err != nil {
-				// TODO: error handling
 				fmt.Println(r.err)
 				continue
 			}
 
-			r.Name = CleanName(r.Name)
-			r.FilePath = filepath.Join(cfg.DataPath, r.InfoHash+".tar")
-			if err := createTarball(r); err != nil {
-				// TODO: error handling
+			r.Name = util.CleanName(r.Name)
+			r.Pathname = filepath.Join(cfg.DataPath, r.InfoHash+".tar")
+			files := util.AddPathPrefix(cfg.DataPath, r.Files...)
+
+			if err := util.CreateTarball(r.Pathname, files...); err != nil {
 				fmt.Println(err)
 				continue
 			}
 
 			// Clean files
-			for _, path := range r.tFiles {
+			for _, path := range files {
 				os.Remove(path)
 			}
 
@@ -116,51 +110,6 @@ func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 			db.DeleteRequest(r.InfoHash)
 		}
 	}
-}
-
-func createTarball(r Record) error {
-	tarball, err := os.Create(r.FilePath)
-	if err != nil {
-		return fmt.Errorf("createTarball: %v", err)
-	}
-	defer tarball.Close()
-
-	tw := tar.NewWriter(tarball)
-	defer tw.Close()
-
-	for _, path := range r.tFiles {
-		err := func() error {
-			f, err := os.Open(path)
-			if err != nil {
-				return fmt.Errorf("open file: %v: %v", path, err)
-			}
-			defer f.Close()
-
-			stat, err := f.Stat()
-			if err != nil {
-				return fmt.Errorf("stat file: %v: %v", path, err)
-			}
-
-			hdr := &tar.Header{
-				Name:    CleanName(filepath.Base(path)),
-				Mode:    0644,
-				Size:    stat.Size(),
-				ModTime: stat.ModTime(),
-			}
-			if err := tw.WriteHeader(hdr); err != nil {
-				return fmt.Errorf("write header: %v: %v", path, err)
-			}
-
-			if _, err := io.Copy(tw, f); err != nil {
-				return fmt.Errorf("write file: %v: %v", path, err)
-			}
-			return nil
-		}()
-		if err != nil {
-			return fmt.Errorf("create tarball %v: %v", r.InfoHash[:7], err)
-		}
-	}
-	return nil
 }
 
 func startService() {

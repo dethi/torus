@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/dethi/torus/util"
+
 	"golang.org/x/net/html"
 )
 
@@ -26,7 +28,7 @@ func FetchTorrent(url string) ([]byte, error) {
 			return nil, fmt.Errorf("FetchTorrent: %v", err)
 		}
 
-		links = Filter(links, func(e string) bool {
+		links = util.Filter(links, func(e string) bool {
 			return strings.HasSuffix(e, ".torrent")
 		})
 

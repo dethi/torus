@@ -124,10 +124,10 @@ func (s *Database) DeleteRecords(age time.Duration) {
 				}
 
 				var size int64
-				if stat, err := os.Stat(blob.FilePath); err == nil {
+				if stat, err := os.Stat(blob.Pathname); err == nil {
 					size = stat.Size()
 				}
-				os.Remove(blob.FilePath)
+				os.Remove(blob.Pathname)
 				s.logger.Printf("records removed: %v: %v bytes", k[:7], size)
 			}
 
