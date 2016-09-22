@@ -10,6 +10,8 @@ type Config struct {
 	DataPath      string `toml:"data_path"`
 	HtpasswdPath  string `toml:"htpasswd_path"`
 	DownloadToken uint   `toml:"download_token"`
+	TorrentPort   uint   `toml:"torrent_port"`
+	WebPort       uint   `toml:"web_port"`
 
 	Mailgun MailgunConfig `toml:"mailgun"`
 }

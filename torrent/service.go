@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
@@ -65,14 +66,14 @@ type TorrentTask struct {
 type Service struct {
 	DataDir string
 
-	token  chan struct{}
+	token  chan uint
 	logger *log.Logger
 }
 
-func NewService(token uint, dataDir string) *Service {
-	ch := make(chan struct{}, token)
+func NewService(port uint, token uint, dataDir string) *Service {
+	ch := make(chan uint, token)
 	for i := uint(0); i < token; i++ {
-		ch <- struct{}{}
+		ch <- port + i
 	}
 
 	return &Service{
@@ -86,14 +87,14 @@ func NewService(token uint, dataDir string) *Service {
 func (ts *Service) Add(torrents ...Torrent) <-chan TorrentTask {
 	ch := make(chan TorrentTask, len(torrents))
 	go func() {
-		<-ts.token
+		port := <-ts.token
 		// Don't forget to put the token back and to close the channel.
 		defer func() {
-			ts.token <- struct{}{}
+			ts.token <- port
 			close(ch)
 		}()
 
-		if tasks, err := ts.download(torrents...); err != nil {
+		if tasks, err := ts.download(port, torrents...); err != nil {
 			ts.logger.Print(err)
 		} else {
 			for _, t := range tasks {
@@ -107,10 +108,10 @@ func (ts *Service) Add(torrents ...Torrent) <-chan TorrentTask {
 
 // Create a new client with a random free port and block until all downloads
 // have finished. The client is closed at the end.
-func (ts *Service) download(torrents ...Torrent) ([]TorrentTask, error) {
+func (ts *Service) download(port uint, torrents ...Torrent) ([]TorrentTask, error) {
 	client, err := torrent.NewClient(&torrent.Config{
 		DataDir:    ts.DataDir,
-		ListenAddr: ":0", // Pick a random free port
+		ListenAddr: ":" + strconv.Itoa(int(port)),
 		NoUpload:   true,
 		Seed:       false,
 		Debug:      false,

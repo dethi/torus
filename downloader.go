@@ -26,7 +26,7 @@ func NewDownloader(in <-chan Record, out chan<- Record,
 		out:    out,
 		logger: log.New(os.Stderr, "Downloader: ", log.LstdFlags),
 
-		service: torrent.NewService(cfg.DownloadToken, dir),
+		service: torrent.NewService(cfg.TorrentPort, cfg.DownloadToken, dir),
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -140,7 +141,7 @@ func startService() {
 	http.HandleFunc("/", auth.JustCheck(authenticator, listView))
 	http.Handle("/data/", http.StripPrefix("/data/",
 		http.FileServer(http.Dir(cfg.DataPath))))
-	go http.ListenAndServe(":8000", nil)
+	go http.ListenAndServe(":"+strconv.Itoa(int(cfg.WebPort)), nil)
 	dispatcher(mailer, newMail, newJob, endJob, quit, tmpDir)
 	fmt.Println("Gracefully stop service...")
 }
