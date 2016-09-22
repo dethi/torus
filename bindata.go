@@ -3,7 +3,7 @@
 // tmpl/list.html
 // DO NOT EDIT!
 
-package main
+package torus
 
 import (
 	"fmt"

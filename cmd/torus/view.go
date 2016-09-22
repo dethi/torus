@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/dethi/goutil/fs"
+	"github.com/dethi/torus"
 )
 
 const GB = 1024 * 1024 * 1024
@@ -62,5 +63,5 @@ func listView(w http.ResponseWriter, r *http.Request) {
 
 func MustTemplate(name string) *template.Template {
 	t := template.New(name)
-	return template.Must(t.Parse(string(MustAsset(name))))
+	return template.Must(t.Parse(string(torus.MustAsset(name))))
 }
