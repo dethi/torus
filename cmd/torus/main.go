@@ -16,7 +16,7 @@ import (
 
 	"github.com/abbot/go-http-auth"
 	"github.com/carlescere/scheduler"
-	"github.com/dethi/torus/torrent"
+	"github.com/dethi/torus"
 	"github.com/dethi/torus/util"
 )
 
@@ -27,7 +27,7 @@ type Record struct {
 	RequestedBy     string
 	Pathname        string
 
-	torrent.Torrent
+	torus.Torrent
 
 	err error
 }
@@ -56,7 +56,7 @@ func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 					continue
 				}
 
-				torrent, err := torrent.NewTorrent(payload)
+				torrent, err := torus.NewTorrent(payload)
 				if err != nil {
 					fmt.Println(err)
 					continue
