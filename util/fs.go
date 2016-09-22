@@ -5,21 +5,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
 )
-
-func Filter(vs []string, f func(string) bool) []string {
-	vsf := make([]string, 0)
-	for _, v := range vs {
-		if f(v) {
-			vsf = append(vsf, v)
-		}
-	}
-	return vsf
-}
 
 // SplitFilename splits a filename in two parts: the name and the
 // file extension.
@@ -29,33 +18,7 @@ func SplitFilename(filename string) (string, string) {
 	return name, ext
 }
 
-const cleanName = `(?i)((\[ *)?[a-z]+.cpasbien.[a-z]+( *\])?)|(web(-?dl)?)|(xvid)`
-
-var regexClean = regexp.MustCompile(cleanName)
-
-func CleanName(filename string) string {
-	s, ext := SplitFilename(filename)
-	s = regexClean.ReplaceAllString(s, "")
-	s = strings.TrimSpace(s)
-	s = strings.Replace(s, ".", "-", -1)
-	s = strings.Replace(s, "[", "-", -1)
-	s = strings.Replace(s, "]", "-", -1)
-	s = strings.Replace(s, " ", "-", -1)
-	s = strings.Trim(s, "-")
-	s = strings.Title(s)
-
-	var last rune = -1
-	s = strings.Map(func(c rune) rune {
-		if c == '-' && last == '-' {
-			return -1
-		}
-		last = c
-		return c
-	}, s)
-
-	return s + ext
-}
-
+// AddPathPrefix adds the prefix to all pathname.
 func AddPathPrefix(prefix string, files ...string) []string {
 	for i, _ := range files {
 		files[i] = filepath.Join(prefix, files[i])
@@ -63,6 +26,8 @@ func AddPathPrefix(prefix string, files ...string) []string {
 	return files
 }
 
+// CreateTarball creates a new tarball at pathname location with all
+// the given filepaths.
 func CreateTarball(pathname string, files ...string) error {
 	tarball, err := os.Create(pathname)
 	if err != nil {
@@ -87,7 +52,7 @@ func CreateTarball(pathname string, files ...string) error {
 			}
 
 			hdr := &tar.Header{
-				Name:    CleanName(filepath.Base(path)),
+				Name:    filepath.Base(path),
 				Mode:    0644,
 				Size:    stat.Size(),
 				ModTime: stat.ModTime(),
