@@ -1,7 +1,7 @@
 FROM gliderlabs/alpine
 MAINTAINER Thibault Deutsch <thibault.deutsch@gmail.com>
 
-EXPOSE 8000
+EXPOSE 80
 
 VOLUME /static
 WORKDIR /app
