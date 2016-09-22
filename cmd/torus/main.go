@@ -17,6 +17,7 @@ import (
 	"github.com/abbot/go-http-auth"
 	"github.com/carlescere/scheduler"
 	"github.com/dethi/torus"
+	"github.com/dethi/torus/scraper"
 	"github.com/dethi/torus/util"
 )
 
@@ -50,7 +51,7 @@ func dispatcher(mailer *Mailer, newMail <-chan Message, newJob chan<- Record,
 			return
 		case msg := <-newMail:
 			for _, url := range regexUrl.FindAllString(msg.Body, -1) {
-				payload, err := FetchTorrent(url)
+				payload, err := scraper.FetchTorrent(url)
 				if err != nil {
 					fmt.Println(err)
 					continue
