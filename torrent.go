@@ -2,7 +2,7 @@ package torus
 
 import (
 	"bytes"
-	"fmt"
+	"encoding/hex"
 	"path/filepath"
 
 	"github.com/anacrolix/torrent/metainfo"
@@ -50,6 +50,5 @@ func NewTorrent(payload []byte) (Torrent, error) {
 }
 
 func convertInfoHash(b [20]byte) string {
-	slice := b[:]
-	return fmt.Sprintf("%x", slice)
+	return hex.EncodeToString(b[:])
 }
