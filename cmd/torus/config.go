@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/BurntSushi/toml"
+	"github.com/dethi/torus/mailgun"
 	"github.com/pkg/errors"
 )
 
@@ -13,14 +14,7 @@ type Config struct {
 	TorrentPort   uint   `toml:"torrent_port"`
 	WebPort       uint   `toml:"web_port"`
 
-	Mailgun MailgunConfig `toml:"mailgun"`
-}
-
-type MailgunConfig struct {
-	Domain    string `toml:"domain"`
-	SecretKey string `toml:"secret_key"`
-	PublicKey string `toml:"public_key"`
-	Email     string `toml:"email"`
+	Mailgun mailgun.Config `toml:"mailgun"`
 }
 
 var cfg Config
