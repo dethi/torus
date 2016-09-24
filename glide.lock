@@ -1,5 +1,5 @@
-hash: 9364f4fed1ebaa7f47d2876f6faaf96ffd4c5571085ccc3d832b97a6d29d651a
-updated: 2016-09-18T21:27:02.143964794+02:00
+hash: f619254f8e9ca62c83712dfdd7e377d72193d372e2defb47f00d8f3d7a03c6ed
+updated: 2016-09-25T01:31:00.996828242+02:00
 imports:
 - name: github.com/abbot/go-http-auth
   version: efc9484eee77263a11f158ef4f30fcc30298a942
@@ -54,6 +54,8 @@ imports:
   version: 935e0e8a636ca4ba70b713f3e38a19e1b77739e8
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
   version: 0eeaf8392f5b04950925b8a69fe70f110fa7cbfc
 - name: github.com/mailgun/mailgun-go
