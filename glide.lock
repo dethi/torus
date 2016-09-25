@@ -1,5 +1,5 @@
-hash: f619254f8e9ca62c83712dfdd7e377d72193d372e2defb47f00d8f3d7a03c6ed
-updated: 2016-09-25T01:31:00.996828242+02:00
+hash: 33ca69f772b26285880290b830b452e8f1ccc7521555d84997adafef7ddc5ea9
+updated: 2016-09-25T02:10:44.257942694+02:00
 imports:
 - name: github.com/abbot/go-http-auth
   version: efc9484eee77263a11f158ef4f30fcc30298a942
@@ -70,6 +70,8 @@ imports:
   version: 2dfbae5fcf46374f166f8969cb07e167f1be6273
   subpackages:
   - skiplist
+- name: github.com/stretchr/testify
+  version: f390dcf405f7b83c997eac1b06768bb9f44dec18
 - name: github.com/tylertreat/BoomFilters
   version: ae0b9585d4b87b2fe0b49ee09270abae7aaad179
 - name: github.com/urfave/negroni

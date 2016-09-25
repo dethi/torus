@@ -12,10 +12,19 @@ import (
 
 // SplitFilename splits a filename in two parts: the name and the
 // file extension.
-func SplitFilename(filename string) (string, string) {
-	ext := strings.ToLower(filepath.Ext(filename))
-	name := filename[:len(filename)-len(ext)]
-	return name, ext
+func SplitFilename(filename string) (name string, ext string) {
+	filename = filepath.Base(filename)
+	if filename == "." {
+		return "", ""
+	}
+
+	ext = strings.ToLower(filepath.Ext(filename))
+	if len(ext) == len(filename) {
+		return filename, ""
+	}
+
+	name = filename[:len(filename)-len(ext)]
+	return
 }
 
 // AddPathPrefix adds the prefix to all pathname.
