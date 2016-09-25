@@ -404,10 +404,16 @@ func (cl *Client) acceptConnections(l net.Listener, utp bool) {
 		} else {
 			acceptTCP.Add(1)
 		}
+		if cl.config.Debug {
+			log.Printf("accepted connection from %s", conn.RemoteAddr())
+		}
 		reject := cl.badPeerIPPort(
 			missinggo.AddrIP(conn.RemoteAddr()),
 			missinggo.AddrPort(conn.RemoteAddr()))
 		if reject {
+			if cl.config.Debug {
+				log.Printf("rejecting connection from %s", conn.RemoteAddr())
+			}
 			acceptReject.Add(1)
 			conn.Close()
 			continue
@@ -582,7 +588,8 @@ func (cl *Client) establishOutgoingConn(t *Torrent, addr string) (c *connection,
 	if nc == nil {
 		return
 	}
-	c, err = cl.handshakesConnection(nc, t, !cl.config.DisableEncryption, utp)
+	encryptFirst := !cl.config.DisableEncryption && !cl.config.PreferNoEncryption
+	c, err = cl.handshakesConnection(nc, t, encryptFirst, utp)
 	if err != nil {
 		nc.Close()
 		return
@@ -590,12 +597,12 @@ func (cl *Client) establishOutgoingConn(t *Torrent, addr string) (c *connection,
 		return
 	}
 	nc.Close()
-	if cl.config.DisableEncryption {
-		// We already tried without encryption.
+	if cl.config.DisableEncryption || cl.config.ForceEncryption {
+		// There's no alternate encryption case to try.
 		return
 	}
-	// Try again without encryption, using whichever protocol type worked last
-	// time.
+	// Try again with encryption if we didn't earlier, or without if we did,
+	// using whichever protocol type worked last time.
 	if utp {
 		nc, err = cl.dialUTP(addr, t)
 	} else {
@@ -605,7 +612,7 @@ func (cl *Client) establishOutgoingConn(t *Torrent, addr string) (c *connection,
 		err = fmt.Errorf("error dialing for unencrypted connection: %s", err)
 		return
 	}
-	c, err = cl.handshakesConnection(nc, t, false, utp)
+	c, err = cl.handshakesConnection(nc, t, !encryptFirst, utp)
 	if err != nil || c == nil {
 		nc.Close()
 	}
@@ -819,7 +826,7 @@ func maybeReceiveEncryptedHandshake(rw io.ReadWriter, skeys [][]byte) (ret io.Re
 
 func (cl *Client) receiveSkeys() (ret [][]byte) {
 	for ih := range cl.torrents {
-		ret = append(ret, ih[:])
+		ret = append(ret, append([]byte(nil), ih[:]...))
 	}
 	return
 }
@@ -851,6 +858,10 @@ func (cl *Client) receiveHandshakes(c *connection) (t *Torrent, err error) {
 			}
 			return
 		}
+	}
+	if cl.config.ForceEncryption && !c.encrypted {
+		err = errors.New("connection not encrypted")
+		return
 	}
 	ih, ok, err := cl.connBTHandshake(c, nil)
 	if err != nil {
