@@ -27,7 +27,10 @@ func NewTorrent(payload []byte) (Torrent, error) {
 	if err != nil {
 		return t, errors.Wrap(err, "load metainfo")
 	}
-	info := mi.UnmarshalInfo()
+	info, err := mi.UnmarshalInfo()
+	if err != nil {
+		return t, errors.Wrap(err, "unmarshal info")
+	}
 
 	t.Name, _ = util.SplitFilename(util.CleanName(info.Name))
 	t.Size = uint64(info.TotalLength())
