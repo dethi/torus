@@ -1,88 +1,59 @@
 package scraper
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/dethi/torus/util"
-
-	"golang.org/x/net/html"
+	"github.com/pkg/errors"
 )
 
-func FetchTorrent(url string) ([]byte, error) {
-	resp, err := http.Get(url)
+func ScrapeTorrentURL(url string) (string, error) {
+	if strings.HasSuffix(url, ".torrent") {
+		return url, nil
+	}
+
+	doc, err := goquery.NewDocument(url)
 	if err != nil {
-		return nil, fmt.Errorf("FetchTorrent: %v", err)
+		return "", err
+	}
+
+	var res []string
+	doc.Find("a").Each(func(i int, s *goquery.Selection) {
+		if v, ok := s.Attr("href"); ok && strings.HasSuffix(v, ".torrent") {
+			res = append(res, v)
+		}
+	})
+
+	if len(res) != 1 {
+		return "", errors.Errorf("found %v torrent URL", len(res))
+	}
+
+	return util.AbsoluteURL(url, res[0])
+}
+
+func FetchTorrent(url string) ([]byte, error) {
+	torrentURL, err := ScrapeTorrentURL(url)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.Get(torrentURL)
+	if err != nil {
+		return nil, errors.Wrapf(err, "fetch torrent failed %v", torrentURL)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("FetchTorrent: invalid URL: %v", resp.Status)
-	}
-
-	if !strings.HasSuffix(url, ".torrent") {
-		links, err := extractLinks(resp)
-		if err != nil {
-			return nil, fmt.Errorf("FetchTorrent: %v", err)
-		}
-
-		links = util.Filter(links, func(e string) bool {
-			return strings.HasSuffix(e, ".torrent")
-		})
-
-		if c := len(links); c != 1 {
-			return nil, fmt.Errorf("FetchTorrent: found %v torrents", c)
-		}
-		return FetchTorrent(links[0])
+		return nil, errors.Errorf("got `%v` for %v", resp.Status, torrentURL)
 	}
 
 	if resp.Header.Get("Content-Type") != "application/x-bittorrent" {
-		return nil, fmt.Errorf("FetchTorrent: invalid Content-Type: %v",
-			resp.Header.Get("Content-Type"))
+		return nil, errors.Errorf("got `Content-Type: %v` for %v",
+			resp.Header.Get("Content-Type"), torrentURL)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		err = fmt.Errorf("FetchTorrent: %v", err)
-	}
-	return data, err
-}
-
-func extractLinks(resp *http.Response) ([]string, error) {
-	doc, err := html.Parse(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("extractTorrent: parsing HTML: %v", err)
-	}
-
-	var links []string
-	visitNode := func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "a" {
-			for _, a := range n.Attr {
-				if a.Key != "href" {
-					continue
-				}
-				link, err := resp.Request.URL.Parse(a.Val)
-				if err != nil {
-					continue // ignore bad URLs
-				}
-				links = append(links, link.String())
-			}
-		}
-	}
-	forEachNode(doc, visitNode, nil)
-	return links, nil
-}
-
-func forEachNode(n *html.Node, pre, post func(n *html.Node)) {
-	if pre != nil {
-		pre(n)
-	}
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		forEachNode(c, pre, post)
-	}
-	if post != nil {
-		post(n)
-	}
+	return ioutil.ReadAll(resp.Body)
 }

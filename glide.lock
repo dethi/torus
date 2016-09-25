@@ -1,5 +1,5 @@
 hash: f736005392beaf84922486bebe7d64e1102e6a53d205f35dc6916d785deddae6
-updated: 2016-09-25T16:29:58.951334469+02:00
+updated: 2016-09-25T22:17:17.987539834+02:00
 imports:
 - name: github.com/abbot/go-http-auth
   version: efc9484eee77263a11f158ef4f30fcc30298a942
@@ -36,6 +36,8 @@ imports:
   - util
 - name: github.com/anacrolix/utp
   version: 59dfcf2995f0a175d717fe0b5b7c526771a0ad83
+- name: github.com/andybalholm/cascadia
+  version: 1c31af6f6c1a7b101ed05aacc7d8a738b43ae86e
 - name: github.com/asdine/storm
   version: 98d2fb59b365b481649fd6f7c33ec7e7336376e9
 - name: github.com/blevesearch/bleve
@@ -85,7 +87,7 @@ imports:
 - name: github.com/tylertreat/BoomFilters
   version: ae0b9585d4b87b2fe0b49ee09270abae7aaad179
 - name: github.com/uber-go/zap
-  version: 47f41350ff078ea1415b63c117bf1475b7bbe72c
+  version: 47323e256dc241d67ceefd34e5f091658e3e3d5b
 - name: github.com/urfave/negroni
   version: fde5e16d32adc7ad637e9cd9ad21d4ebc6192535
 - name: github.com/willf/bitset
