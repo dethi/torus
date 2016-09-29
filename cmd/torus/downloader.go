@@ -54,7 +54,7 @@ func (d *Downloader) Start() {
 }
 
 func waitDiskSpace(size uint64) error {
-	fsStat, err := fs.GetFsStats(cfg.DataPath)
+	fsStat, err := fs.GetStats(cfg.DataPath)
 	if err != nil {
 		return errors.Wrap(err, "wait disk space")
 	}
@@ -62,7 +62,7 @@ func waitDiskSpace(size uint64) error {
 	// Waiting for filesystem space
 	for fsStat.Available < 2*size {
 		time.Sleep(10 * time.Minute)
-		if v, _ := fs.GetFsStats(cfg.DataPath); v != nil {
+		if v, _ := fs.GetStats(cfg.DataPath); v != nil {
 			fsStat = v
 		}
 	}
