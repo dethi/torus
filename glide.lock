@@ -1,5 +1,5 @@
 hash: f736005392beaf84922486bebe7d64e1102e6a53d205f35dc6916d785deddae6
-updated: 2016-09-25T22:17:17.987539834+02:00
+updated: 2016-09-29T23:51:04.372194167+02:00
 imports:
 - name: github.com/abbot/go-http-auth
   version: efc9484eee77263a11f158ef4f30fcc30298a942
@@ -51,7 +51,7 @@ imports:
 - name: github.com/carlescere/scheduler
   version: ddcf6a6be3e8bd4b480f96031d9e1f3abecf2767
 - name: github.com/dethi/goutil
-  version: 22c8a006b0c42d4e834762c059751571784fba26
+  version: b360d98cd2558005dfa8451d0f0462581fed19cc
   subpackages:
   - fs
 - name: github.com/dustin/go-humanize
@@ -67,7 +67,7 @@ imports:
 - name: github.com/mailgun/mailgun-go
   version: 369a1fa57ce6fb314e627087b9fff0db5c266c0f
 - name: github.com/mattn/go-sqlite3
-  version: 3fb7a0e792edd47bf0cf1e919dfc14e2be412e15
+  version: 4b0af852c17164dce48e6754e3094c55192e4934
 - name: github.com/mschoch/smat
   version: 90eadee771aeab36e8bf796039b8c261bebebe4f
 - name: github.com/pkg/errors
@@ -75,7 +75,7 @@ imports:
 - name: github.com/PuerkitoBio/goquery
   version: 56a198aba89cdf7a612e6c762eff9d788b9f2dae
 - name: github.com/RoaringBitmap/roaring
-  version: dd6b41e153cc91db0440d4155626f8e2c2f298a4
+  version: c3e090c41e857e2efc2b85af31c3c23bde0e9574
 - name: github.com/ryszard/goskiplist
   version: 2dfbae5fcf46374f166f8969cb07e167f1be6273
   subpackages:
@@ -87,7 +87,7 @@ imports:
 - name: github.com/tylertreat/BoomFilters
   version: ae0b9585d4b87b2fe0b49ee09270abae7aaad179
 - name: github.com/uber-go/zap
-  version: 47323e256dc241d67ceefd34e5f091658e3e3d5b
+  version: f1942381637c11a802c356e70ab5b0a953540bb5
 - name: github.com/urfave/negroni
   version: fde5e16d32adc7ad637e9cd9ad21d4ebc6192535
 - name: github.com/willf/bitset
@@ -97,12 +97,12 @@ imports:
 - name: github.com/zeebo/bencode
   version: 9e17a193afc98ea546601d05f036b0b033d15b3e
 - name: golang.org/x/crypto
-  version: 8e06e8ddd9629eb88639aba897641bff8031f1d3
+  version: a20de3fa94e069ec699987416679230d72e030a3
   subpackages:
   - bcrypt
   - blowfish
 - name: golang.org/x/net
-  version: f09c4662a0bd6bd8943ac7b4931e185df9471da4
+  version: 8058fc7b18f8794d9fc57eee98d64fe2c750e3f1
   subpackages:
   - context
   - html
