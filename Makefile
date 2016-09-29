@@ -2,7 +2,7 @@ PROJECT = torus
 AUTHOR = dethi
 
 GOBINDATA = go-bindata -pkg $(PROJECT)
-GOBUILD = go build -v -i -ldflags "-X main.version=`git rev-parse --short HEAD``date -u +-%Y%m%d.%H%M%S`" ./cmd/...
+GOBUILD = go build -v -i -ldflags "-X main.version=`git rev-parse --short HEAD``date -u +-%Y%m%d.%H%M%S`" ./cmd/torus
 GOPACKAGE = $(shell go list ./... | grep -v /vendor/)
 
 all: build-debug
