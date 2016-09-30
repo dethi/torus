@@ -1,5 +1,5 @@
-hash: f736005392beaf84922486bebe7d64e1102e6a53d205f35dc6916d785deddae6
-updated: 2016-09-29T23:51:04.372194167+02:00
+hash: 748d5ae000043d7f0462cc4f3beb1bc90070433ddf29bbc313d7b2154c0d911f
+updated: 2016-10-01T01:32:34.407723538+02:00
 imports:
 - name: github.com/abbot/go-http-auth
   version: efc9484eee77263a11f158ef4f30fcc30298a942
@@ -20,7 +20,7 @@ imports:
 - name: github.com/anacrolix/sync
   version: 812602587b72df6a2a4f6e30536adc75394a374b
 - name: github.com/anacrolix/torrent
-  version: 47ef75379574d833830d256663d2a2acac247a69
+  version: d72d93bba7e36b8fb1ca133e02f34dcd840c6922
   subpackages:
   - bencode
   - dht
@@ -70,6 +70,8 @@ imports:
   version: 4b0af852c17164dce48e6754e3094c55192e4934
 - name: github.com/mschoch/smat
   version: 90eadee771aeab36e8bf796039b8c261bebebe4f
+- name: github.com/pilu/xrequestid
+  version: 870344eeaa6c844027ac57cba3c926e0684e05cb
 - name: github.com/pkg/errors
   version: 17b591df37844cde689f4d5813e5cea0927d8dd2
 - name: github.com/PuerkitoBio/goquery
@@ -87,7 +89,7 @@ imports:
 - name: github.com/tylertreat/BoomFilters
   version: ae0b9585d4b87b2fe0b49ee09270abae7aaad179
 - name: github.com/uber-go/zap
-  version: f1942381637c11a802c356e70ab5b0a953540bb5
+  version: c4939d1166b2220bb45338e21506623b4bbdec50
 - name: github.com/urfave/negroni
   version: fde5e16d32adc7ad637e9cd9ad21d4ebc6192535
 - name: github.com/willf/bitset
@@ -97,12 +99,12 @@ imports:
 - name: github.com/zeebo/bencode
   version: 9e17a193afc98ea546601d05f036b0b033d15b3e
 - name: golang.org/x/crypto
-  version: a20de3fa94e069ec699987416679230d72e030a3
+  version: 568507f56e5b05b3c219ffd7fba12655c07bcc86
   subpackages:
   - bcrypt
   - blowfish
 - name: golang.org/x/net
-  version: 8058fc7b18f8794d9fc57eee98d64fe2c750e3f1
+  version: 697293012c1df3836225e65b04b16871ac5bf0bf
   subpackages:
   - context
   - html

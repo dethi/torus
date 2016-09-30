@@ -35,3 +35,4 @@ import:
 - package: github.com/PuerkitoBio/goquery
   version: ~1.0.1
 - package: github.com/uber-go/zap
+- package: github.com/pilu/xrequestid
