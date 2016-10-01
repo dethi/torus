@@ -7,12 +7,12 @@ import (
 )
 
 type Config struct {
+	ListenAddr    string `toml:"listen_addr"`
 	DatabasePath  string `toml:"database_path"`
 	DataPath      string `toml:"data_path"`
 	HtpasswdPath  string `toml:"htpasswd_path"`
 	DownloadToken uint   `toml:"download_token"`
 	TorrentPort   uint   `toml:"torrent_port"`
-	WebPort       uint   `toml:"web_port"`
 
 	Mailgun mailgun.Config `toml:"mailgun"`
 }
