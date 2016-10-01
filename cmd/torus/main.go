@@ -6,10 +6,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/dethi/torus"
 	_ "github.com/dethi/torus/web"
 )
-
-var version string
 
 func main() {
 	configPath := flag.String("config", "torus.cfg", "config pathname")
@@ -17,7 +16,7 @@ func main() {
 	flag.Parse()
 
 	if *versionFlag {
-		fmt.Println("rev", version)
+		fmt.Println(torus.Revision())
 		return
 	}
 
