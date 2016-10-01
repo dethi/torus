@@ -6,6 +6,9 @@ import (
 	"log"
 	"net/http"
 
+	_ "expvar"
+	_ "net/http/pprof"
+
 	"github.com/dethi/torus"
 	_ "github.com/dethi/torus/web"
 )
