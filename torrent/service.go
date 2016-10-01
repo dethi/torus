@@ -103,5 +103,10 @@ func (ts *Service) download(port uint, torrents ...torus.Torrent) ([]TorrentTask
 	}
 
 	client.WaitAll()
+
+	// Remove all torrents from the client to avoid write after close panic.
+	for _, tr := range client.Torrents() {
+		tr.Drop()
+	}
 	return tasks, nil
 }
