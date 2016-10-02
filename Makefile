@@ -17,17 +17,19 @@ all: build-debug
 
 release: build-prod docker-build docker-push clean
 
-web/template/files.go: web/template/files/*
-	staticfiles -o $@ web/template/files
+web/files.go: web/
+	( cd web/; npm run build )
+	staticfiles -o $@ web/dist
 
-build-static: web/template/files.go
+build-static: web/files.go
 
 build-debug: build-static
 	@${GOBUILD}
 
-build-prod:
+build-prod: build-static
 	docker run --rm -v "${PWD}":/go/src/github.com/${NAME} \
 		-w /go/src/github.com/${NAME} \
+		-e CGO_ENABLED=0 \
 		golang ${GOBUILD}
 
 docker-build:
@@ -45,5 +47,9 @@ test:
 clean:
 	rm -f ${PROJECT} *.upx
 
+setup:
+	glide i -v
+	( cd web/; npm install )
+
 .PHONY: all release build-static build-dev build-prod \
-	docker-build docker-push vet test clean
+	docker-build docker-push vet test clean setup
