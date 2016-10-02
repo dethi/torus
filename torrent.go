@@ -19,6 +19,8 @@ type Torrent struct {
 	Payload []byte
 }
 
+// NewTorrent creates a new torrent from a payload. It returns an error if
+// the payload is invalid.
 func NewTorrent(payload []byte) (Torrent, error) {
 	var t Torrent
 

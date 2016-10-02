@@ -24,6 +24,10 @@ type Service struct {
 	logger *log.Logger
 }
 
+// NewService initializes a new service using dataDir as its storage
+// directory. The token limits the number of requests completed at a given
+// time. Behind the scene, it uses a new torrent client for each request. Each
+// torrent client have a dedicated port equal to port+current_token.
 func NewService(port uint, token uint, dataDir string) *Service {
 	ch := make(chan uint, token)
 	for i := uint(0); i < token; i++ {
@@ -37,7 +41,7 @@ func NewService(port uint, token uint, dataDir string) *Service {
 	}
 }
 
-// Add torrents to the download queue and return a response channel.
+// Add adds torrents to the download queue and return a response channel.
 func (ts *Service) Add(torrents ...torus.Torrent) <-chan TorrentTask {
 	ch := make(chan TorrentTask, len(torrents))
 	go func() {
@@ -60,9 +64,10 @@ func (ts *Service) Add(torrents ...torus.Torrent) <-chan TorrentTask {
 	return ch
 }
 
-// Create a new client with a random free port and block until all downloads
-// have finished. The client is closed at the end.
-func (ts *Service) download(port uint, torrents ...torus.Torrent) ([]TorrentTask, error) {
+// download creates a new torrent client with port and block until all
+// downloads have finished. The client is closed at the end.
+func (ts *Service) download(port uint, torrents ...torus.Torrent)
+	([]TorrentTask, error) {
 
 	client, err := torrent.NewClient(&torrent.Config{
 		DataDir:    ts.DataDir,
@@ -72,7 +77,7 @@ func (ts *Service) download(port uint, torrents ...torus.Torrent) ([]TorrentTask
 		Debug:      false,
 		//NoDHT:      true,
 		//DisableUTP: true,
-		//ForceEncryption: true, // TODO: update dep to use this
+		//ForceEncryption: true,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "initialize client")
