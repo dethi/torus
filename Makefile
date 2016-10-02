@@ -17,7 +17,7 @@ all: build-debug
 
 release: build-prod docker-build docker-push clean
 
-web/files.go: web/
+web/files.go: web/src/*
 	( cd web/; npm run build )
 	staticfiles -o $@ web/dist
 
