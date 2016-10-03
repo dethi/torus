@@ -1,5 +1,5 @@
-hash: 748d5ae000043d7f0462cc4f3beb1bc90070433ddf29bbc313d7b2154c0d911f
-updated: 2016-10-01T01:32:34.407723538+02:00
+hash: ddef490dc9374c02dda4464d5e709998dbee5ed20469500bfefe588507d2602d
+updated: 2016-10-03T02:13:29.583900463+02:00
 imports:
 - name: github.com/abbot/go-http-auth
   version: efc9484eee77263a11f158ef4f30fcc30298a942
@@ -78,6 +78,10 @@ imports:
   version: 56a198aba89cdf7a612e6c762eff9d788b9f2dae
 - name: github.com/RoaringBitmap/roaring
   version: c3e090c41e857e2efc2b85af31c3c23bde0e9574
+- name: github.com/rs/cors
+  version: a62a804a8a009876ca59105f7899938a1349f4b3
+- name: github.com/rs/xhandler
+  version: ed27b6fd65218132ee50cd95f38474a3d8a2cd12
 - name: github.com/ryszard/goskiplist
   version: 2dfbae5fcf46374f166f8969cb07e167f1be6273
   subpackages:

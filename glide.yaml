@@ -36,3 +36,5 @@ import:
   version: ~1.0.1
 - package: github.com/uber-go/zap
 - package: github.com/pilu/xrequestid
+- package: github.com/rs/cors
+  version: ~1.0.0
