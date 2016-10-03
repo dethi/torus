@@ -10,11 +10,11 @@ import (
 )
 
 type CpasbienResult struct {
-	Name string
-	URL  string
-	Size string
-	Up   int
-	Down int
+	Name string `json:"name"`
+	URL  string `json:"url"`
+	Size string `json:"size"`
+	Up   int    `json:"up"`
+	Down int    `json:"down"`
 }
 
 const cpasbienURL = "http://www.cpasbien.cm/recherche/"
