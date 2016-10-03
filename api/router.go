@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	VersionRoute = "api.version"
-	SearchRoute  = "api.search"
+	VersionRoute  = "api.version"
+	SearchRoute   = "api.search"
+	TorrentsRoute = "api.torrents"
 )
 
 var router *mux.Router
@@ -23,6 +24,7 @@ func NewWebRouter() *mux.Router {
 	r := mux.NewRouter()
 	r.Path("/api/version").Name(VersionRoute)
 	r.Path("/api/search/{tracker}").Name(SearchRoute)
+	r.Path("/api/torrents").Name(TorrentsRoute)
 	return r
 }
 
@@ -30,6 +32,7 @@ func init() {
 	router = NewWebRouter()
 	router.Get(VersionRoute).HandlerFunc(VersionHandler)
 	router.Get(SearchRoute).HandlerFunc(SearchHandler)
+	router.Get(TorrentsRoute).HandlerFunc(TorrentsHandler)
 
 	n := negroni.New()
 	n.Use(negroni.NewRecovery())

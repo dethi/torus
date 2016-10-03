@@ -11,13 +11,13 @@ const (
 )
 
 type Request struct {
-	UserId uint64
-	URLs   []string
-	State  RequestState
+	UserId uint64       `json:"user_id"`
+	URLs   []string     `json:"urls"`
+	State  RequestState `json:"state"`
 
-	RequestTime        time.Time
-	DownloadDuration   time.Duration
-	ProcessingDuration time.Duration
+	RequestTime        time.Time     `json:"request_time"`
+	DownloadDuration   time.Duration `json:"download_duration"`
+	ProcessingDuration time.Duration `json:"processing_duration"`
 }
 
 type RequestService interface {

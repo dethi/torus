@@ -1,6 +1,7 @@
 package torus
 
 type Record struct {
-	Request  Request
-	Torrents []Torrent
+	ID       uint64    `json:"id"`
+	Request  Request   `json:"request"`
+	Torrents []Torrent `json:"torrents"`
 }

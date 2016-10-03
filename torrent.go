@@ -11,12 +11,12 @@ import (
 )
 
 type Torrent struct {
-	Name     string
-	Size     uint64
-	InfoHash string
-	Files    []string
+	Name     string   `json:"name"`
+	Size     uint64   `json:"size"`
+	InfoHash string   `json:"info_hash"`
+	Files    []string `json:"-"`
 
-	Payload []byte
+	Payload []byte `json:"-"`
 }
 
 // NewTorrent creates a new torrent from a payload. It returns an error if
