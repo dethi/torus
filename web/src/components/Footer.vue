@@ -2,7 +2,7 @@
   <footer class="footer">
     <div class="container">
       <div class="content has-text-centered">
-        <p><em>v. {{ version }}</em></p>
+        <p><em>{{ version }}</em></p>
         <p>
           <a class="icon" href="https://github.com/dethi/torus">
             <i class="fa fa-github"></i>
