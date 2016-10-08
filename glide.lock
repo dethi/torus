@@ -1,5 +1,5 @@
-hash: e850b4d786e2e8a938973b5d13c44a9419ff6f85141f6465816b950e92502f76
-updated: 2016-10-08T17:36:34.439550266+02:00
+hash: e681f0b0b808bc8e943672f7fc9fb1342498e4a952ece7a029b9d5c9eb5b223f
+updated: 2016-10-08T17:42:12.200935805+02:00
 imports:
 - name: github.com/anacrolix/missinggo
   version: 86f106025d38e0baf732bb3e6761ab16e87d96cb
@@ -60,6 +60,8 @@ imports:
   version: 0eeaf8392f5b04950925b8a69fe70f110fa7cbfc
 - name: github.com/gorilla/schema
   version: 0164a00ab4cd01d814d8cd5bf63fd9fcea30e23b
+- name: github.com/lib/pq
+  version: fcb9ef54da7cae1ea08f0b5a92f236d83e59294a
 - name: github.com/mailgun/mailgun-go
   version: 369a1fa57ce6fb314e627087b9fff0db5c266c0f
 - name: github.com/mattn/go-sqlite3
