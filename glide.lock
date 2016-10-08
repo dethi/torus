@@ -1,8 +1,6 @@
-hash: 1fa894111429dd1b7c956bde6f44194aa8553a4d08d8107883e289e06a06876c
-updated: 2016-10-03T02:32:06.711146312+02:00
+hash: e850b4d786e2e8a938973b5d13c44a9419ff6f85141f6465816b950e92502f76
+updated: 2016-10-08T17:36:34.439550266+02:00
 imports:
-- name: github.com/abbot/go-http-auth
-  version: efc9484eee77263a11f158ef4f30fcc30298a942
 - name: github.com/anacrolix/missinggo
   version: 86f106025d38e0baf732bb3e6761ab16e87d96cb
   subpackages:
@@ -38,10 +36,6 @@ imports:
   version: 59dfcf2995f0a175d717fe0b5b7c526771a0ad83
 - name: github.com/andybalholm/cascadia
   version: 1c31af6f6c1a7b101ed05aacc7d8a738b43ae86e
-- name: github.com/asdine/storm
-  version: 98d2fb59b365b481649fd6f7c33ec7e7336376e9
-- name: github.com/blevesearch/bleve
-  version: f531835d5c212ee5f95c49d2debc28e65e6d1693
 - name: github.com/boltdb/bolt
   version: 583e8937c61f1af6513608ccc75c97b6abdf4ff9
 - name: github.com/bradfitz/iter
@@ -98,13 +92,6 @@ imports:
   version: 24b253213c7bdcdd6cde7d6c73760eb16d98551c
 - name: github.com/willf/bloom
   version: c358096ae52229d900ad0c8e4e2634a1115c87f4
-- name: github.com/zeebo/bencode
-  version: 9e17a193afc98ea546601d05f036b0b033d15b3e
-- name: golang.org/x/crypto
-  version: 568507f56e5b05b3c219ffd7fba12655c07bcc86
-  subpackages:
-  - bcrypt
-  - blowfish
 - name: golang.org/x/net
   version: 697293012c1df3836225e65b04b16871ac5bf0bf
   subpackages:
